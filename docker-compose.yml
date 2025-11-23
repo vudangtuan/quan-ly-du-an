@@ -1,0 +1,104 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: pg_tm
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: postgres
+    volumes:
+      - pg_data:/var/lib/postgresql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:8-alpine
+    container_name: auth_redis_tm
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+#    lệnh khởi động Redis với chế độ lưu dữ liệu
+#    bền vững (persistence) bằng AOF (Append Only File) được bật lên.
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+#  rabbitmq:
+#    image: rabbitmq:3-management
+#    ports:
+#      - "5672:5672"
+#      - "15672:15672"
+#    environment:
+#      RABBITMQ_DEFAULT_USER: guest
+#      RABBITMQ_DEFAULT_PASS: guest
+
+  eureka-server:
+    build: ./backend/eureka-server
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8761/actuator/health" ]
+      interval: 30s
+      retries: 3
+
+
+
+  auth-service:
+    build: ./backend/auth-service
+    container_name: auth-service
+    ports:
+      - "8000:8000"
+    environment:
+      - JWT_PRIVATE_KEY_PATH=file:/app/certs/private_key.pem
+      - JWT_PUBLIC_KEY_PATH=file:/app/certs/public_key.pem
+      - DB_URL=jdbc:postgresql://postgres:5432/user_db
+      - DB_USERNAME=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - REDIS_HOST=redis
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - INTERNAL_SECRET_KEY=${INTERNAL_SECRET_KEY}
+      - EUREKA_URI=${EUREKA_URI}
+    depends_on:
+      - postgres
+      - redis
+      - eureka-server
+    volumes:
+      - ./certs:/app/certs
+
+  core-service:
+    build: ./backend/core-service
+    container_name: core-service
+    ports:
+      - "8001:8001"
+    environment:
+      - DB_URL=jdbc:postgresql://postgres:5432/core_db
+      - DB_USERNAME=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - REDIS_HOST=redis
+      - INTERNAL_SECRET_KEY=${INTERNAL_SECRET_KEY}
+      - EUREKA_URI=${EUREKA_URI}
+    depends_on:
+      - postgres
+      - redis
+      - eureka-server
+
+  api-gateway:
+    build: ./backend/api-gateway
+    container_name: api-gateway
+    ports:
+      - "1004:1004"
+    environment:
+      - EUREKA_URI=${EUREKA_URI}
+    depends_on:
+      - eureka-server
+      - auth-service
+      - core-service
+
+volumes:
+  pg_data:
+  redis_data:
+

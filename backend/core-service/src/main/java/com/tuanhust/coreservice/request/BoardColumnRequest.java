@@ -1,0 +1,12 @@
+package com.tuanhust.coreservice.request;
+
+import jakarta.validation.constraints.NotBlank;
+import lombok.Builder;
+import lombok.Data;
+
+@Data
+@Builder
+public class BoardColumnRequest {
+    @NotBlank(message = "Tên không được trống")
+    private String name;
+}
