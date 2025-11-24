@@ -4,8 +4,8 @@ spring:
 
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/user_db}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    username: ${DB_USERNAME:tuan}
+    password: ${DB_PASSWORD:1234}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -30,7 +30,7 @@ spring:
       client:
         registration:
           google:
-            client-id: ${GOOGLE_CLIENT_ID}
+            client-id: ${GOOGLE_CLIENT_ID:738974317402-vt2p9bbrn4dj1bjmb5lqupd45trs8c4f.apps.googleusercontent.com}
 
 server:
   port: 8000
@@ -44,7 +44,7 @@ jwt:
   time-to-live: 604800000 # 7 days
 
 internal:
-  secret-key: ${INTERNAL_SECRET_KEY}
+  secret-key: ${INTERNAL_SECRET_KEY:dHXhuqVuMjAyMTQxMzM=}
 
 eureka:
   client:

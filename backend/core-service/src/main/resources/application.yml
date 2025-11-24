@@ -4,8 +4,8 @@ spring:
 
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/core_db}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    username: ${DB_USERNAME:tuan}
+    password: ${DB_PASSWORD:1234}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -33,7 +33,7 @@ eureka:
     service-url:
       defaultZone: ${EUREKA_URI:http://localhost:8761/eureka/}
 internal:
-  secret-key: ${INTERNAL_SECRET_KEY}
+  secret-key: ${INTERNAL_SECRET_KEY:dHXhuqVuMjAyMTQxMzM=}
 logging:
   level:
     org.springframework.security: debug

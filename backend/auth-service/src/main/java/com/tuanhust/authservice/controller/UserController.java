@@ -5,16 +5,14 @@ import com.tuanhust.authservice.repsonse.ApiResponse;
 import com.tuanhust.authservice.repsonse.AuthResponse;
 import com.tuanhust.authservice.repsonse.UserInfo;
 import com.tuanhust.authservice.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
@@ -33,5 +31,12 @@ public class UserController {
         }
         Pageable pageable = PageRequest.of(page, size);
         return ResponseEntity.ok(ApiResponse.success(userService.searchUsers(text,pageable)));
+    }
+
+    @PatchMapping("/name")
+    public ResponseEntity<ApiResponse<UserInfo>> updateName(
+            @RequestParam String name
+    ){
+        return ResponseEntity.ok(ApiResponse.success(userService.updateName(name)));
     }
 }

@@ -16,6 +16,7 @@ public class UserInfo {
     private String email;
     private String fullName;
     private String role;
+    private boolean hasPassword;
     private Instant createdAt;
 
     public UserInfo(String userId, String email, String fullName) {

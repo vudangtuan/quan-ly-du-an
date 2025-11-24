@@ -13,6 +13,7 @@ import {ProjectKanban} from "@features/projects/components/kanban";
 import {ProjectList} from "@features/projects/components/list";
 import {ProjectGantt} from "@features/projects/components/gantt";
 import {MyTasksPage} from "@features/mytasks/MyTasksPage";
+import SettingsPage from "@features/settings/SettingsPage";
 
 
 // Ví dụ: Tạo một trang NotFound tạm thời
@@ -31,6 +32,7 @@ export const routesConfig = [
                     {path: '/dashboard', element: <DashboardPage/>},
                     {path: '/projects', element: <ProjectsPage/>},
                     {path: '/mytasks',element: <MyTasksPage/>},
+                    {path:'/settings',element: <SettingsPage/>},
                     {
                         path: '/projects/:projectId',
                         element: <ProjectDetailPage/>,

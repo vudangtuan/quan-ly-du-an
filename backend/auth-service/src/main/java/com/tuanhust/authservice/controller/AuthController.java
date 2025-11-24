@@ -1,9 +1,12 @@
 package com.tuanhust.authservice.controller;
 
 import com.tuanhust.authservice.config.UserPrincipal;
+import com.tuanhust.authservice.repsonse.ApiResponse;
 import com.tuanhust.authservice.repsonse.AuthResponse;
+import com.tuanhust.authservice.request.CreatePassword;
 import com.tuanhust.authservice.request.GoogleLoginRequest;
 import com.tuanhust.authservice.request.LoginRequest;
+import com.tuanhust.authservice.request.UpdatePassword;
 import com.tuanhust.authservice.service.AuthService;
 import com.tuanhust.authservice.util.CookieUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,10 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 
@@ -86,10 +86,26 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<?> logout(@AuthenticationPrincipal UserPrincipal userPrincipal,
-                                    HttpServletResponse response){
+    public ResponseEntity<ApiResponse<Void>> logout(@AuthenticationPrincipal UserPrincipal userPrincipal,
+                                                      HttpServletResponse response){
         authService.logout(userPrincipal);
         cookieUtil.deleteRefreshTokenCookie(response);
-        return ResponseEntity.ok("Logout Success");
+        return ResponseEntity.ok(ApiResponse.success("logout success",null));
+    }
+
+    @PostMapping("/password")
+    public ResponseEntity<ApiResponse<Void>> create(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @RequestBody @Valid CreatePassword createPassword){
+        authService.createPassword(userPrincipal.getUserId(),createPassword);
+        return ResponseEntity.ok(ApiResponse.success("created",null));
+    }
+
+    @PutMapping("/password")
+    public ResponseEntity<ApiResponse<Void>> updatePassword(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @RequestBody @Valid UpdatePassword updatePassword){
+        authService.updatePassword(userPrincipal.getUserId(),updatePassword);
+        return ResponseEntity.ok(ApiResponse.success("updated",null));
     }
 }

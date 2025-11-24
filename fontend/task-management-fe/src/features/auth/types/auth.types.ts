@@ -11,6 +11,7 @@ export interface UserInfo {
     fullName: string;
     role: 'ADMIN' | 'USER';
     createdAt: string;
+    hasPassword: boolean;
 }
 
 export interface AuthResponse {

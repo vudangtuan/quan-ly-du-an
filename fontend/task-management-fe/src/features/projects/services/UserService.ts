@@ -11,5 +11,12 @@ export const UserService = {
                 page,size,text
             }
         })
+    },
+    updateName: async (name: string): Promise<UserInfo> => {
+        return await privateApi.patch(`/user/name`, {},{
+            params: {
+                name: name
+            }
+        })
     }
 }

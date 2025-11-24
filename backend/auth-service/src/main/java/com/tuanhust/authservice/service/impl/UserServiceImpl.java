@@ -42,4 +42,20 @@ public class UserServiceImpl implements UserService {
                 .getAuthentication().getPrincipal()).getUserId();
         return userRepository.searchUsers(text, pageable, exceptionUserId);
     }
+
+    @Override
+    @Transactional
+    public UserInfo updateName(String name) {
+        String currentId = ((UserPrincipal) SecurityContextHolder.getContext()
+                .getAuthentication().getPrincipal()).getUserId();
+        User user = userRepository.findById(currentId).orElseThrow();
+        user.setFullName(name);
+        return UserInfo.builder()
+                .userId(user.getUserId())
+                .email(user.getEmail())
+                .fullName(user.getFullName())
+                .createdAt(user.getCreatedAt())
+                .role(user.getRole().name())
+                .build();
+    }
 }

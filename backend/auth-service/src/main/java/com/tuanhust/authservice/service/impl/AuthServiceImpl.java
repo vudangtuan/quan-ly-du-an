@@ -11,7 +11,9 @@ import com.tuanhust.authservice.provider.JwtTokenProvider;
 import com.tuanhust.authservice.repository.UserRepository;
 import com.tuanhust.authservice.repsonse.AuthResponse;
 import com.tuanhust.authservice.repsonse.UserInfo;
+import com.tuanhust.authservice.request.CreatePassword;
 import com.tuanhust.authservice.request.LoginRequest;
+import com.tuanhust.authservice.request.UpdatePassword;
 import com.tuanhust.authservice.service.AuthService;
 import com.tuanhust.authservice.service.SessionService;
 import io.jsonwebtoken.Claims;
@@ -28,6 +30,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -173,6 +176,30 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
+    @Override
+    @Transactional
+    public void createPassword(String userId, CreatePassword createPassword) {
+        User user = userRepository.findById(userId).orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        if(!Objects.equals(createPassword.getPassword(), createPassword.getConfirmPassword())){
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Passwords do not match");
+        }
+        user.setPasswordHash(passwordEncoder.encode(createPassword.getPassword()));
+    }
+
+    @Override
+    @Transactional
+    public void updatePassword(String userId, UpdatePassword updatePassword) {
+        User user = userRepository.findById(userId).orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        if(!Objects.equals(updatePassword.getNewPassword(), updatePassword.getConfirmPassword())){
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Passwords do not match");
+        }
+        if(!passwordEncoder.matches(updatePassword.getPassword(),user.getPasswordHash())){
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,"Wrong Password");
+        }
+        user.setPasswordHash(passwordEncoder.encode(updatePassword.getNewPassword()));
+    }
 
 
     private AuthResponse userMapToAuthResponse(User user, String sessionId, String refreshToken) {
@@ -186,6 +213,7 @@ public class AuthServiceImpl implements AuthService {
                 .expiresIn(expiresIn)
                 .userInfo(UserInfo.builder()
                         .userId(user.getUserId())
+                        .hasPassword(user.getPasswordHash()!=null)
                         .role(user.getRole().toString())
                         .fullName(user.getFullName())
                         .email(user.getEmail())

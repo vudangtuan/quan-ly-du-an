@@ -49,12 +49,13 @@ export const useAuthStore = create<AuthState & AuthActions>()(
 
             logout: () => {
                 set(initialState);
-                // Tùy chọn: bạn cũng có thể gọi API /logout của backend tại đây
-                // (ví dụ: import { privateApi } from '@/services/api'; privateApi.post('/logout');)
             },
+            update: (data: UserInfo) => {
+                set({ userInfo: data });
+            }
         }),
         {
-            name: 'auth-storage', // Tên của key trong localStorage (để dễ debug)
+            name: 'auth-storage',
             storage: createJSONStorage(() => localStorage),
         }
     )
