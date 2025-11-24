@@ -409,6 +409,24 @@ public class TaskServiceImpl implements TaskService {
                 .build();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<TaskResponse> getMyTasks() {
+        List<Task> tasks = taskRepository.findAllByAssigneeId(getCurrentUser().getUserId());
+        return tasks.stream().map(task->TaskResponse.builder()
+                .projectId(task.getProjectId())
+                .taskId(task.getTaskId())
+                .priority(task.getPriority())
+                .title(task.getTitle())
+                .dueAt(task.getDueAt())
+                .createdAt(task.getCreatedAt())
+                .completed(task.getCompleted())
+                .status(task.getStatus())
+                .creatorId(task.getCreatorId())
+                .projectName(task.getProject().getName())
+                .build()).toList();
+    }
+
 
     private TaskResponse maptoTaskResponse(Task task) {
         return TaskResponse.builder()
@@ -429,6 +447,7 @@ public class TaskServiceImpl implements TaskService {
                 .labelIds(task.getTaskLabels() != null ?
                         task.getTaskLabels().stream().map(TaskLabel::getLabelId).collect(Collectors.toList()) :
                         List.of())
+                .projectName(task.getProject().getName())
                 .build();
     }
 

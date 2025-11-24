@@ -1,7 +1,6 @@
 import React from 'react';
 import { NavLink, Link } from 'react-router-dom';
 import {
-    LayoutDashboard,
     CheckSquare,
     FolderKanban,
     Settings,
@@ -36,11 +35,6 @@ export const Sidebar: React.FC = () => {
             {/* 2. Menu Điều hướng */}
             <nav className="flex-1 overflow-y-auto px-4 py-2">
                 <ul className="flex flex-col gap-1">
-                    <NavItem
-                        icon={<LayoutDashboard className="h-5 w-5" />}
-                        label="Dashboard"
-                        to="/dashboard"
-                    />
                     <NavItem
                         icon={<CheckSquare className="h-5 w-5" />}
                         label="Nhiệm vụ của tôi"

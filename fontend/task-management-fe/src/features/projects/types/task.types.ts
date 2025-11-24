@@ -17,6 +17,8 @@ export interface TaskResponse {
     boardColumnId: string;
     assigneeIds: string[];
     labelIds: string[];
+
+    projectName: string;
 }
 
 export interface TaskRequest {

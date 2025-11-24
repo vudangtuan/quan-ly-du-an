@@ -1,6 +1,6 @@
 import {ProjectDetailHeader} from "../components/ProjectDetailHeader";
 import {Link, Outlet, useLocation, useParams} from "react-router-dom";
-import React, {useMemo} from "react";
+import React from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {ProjectService} from "../services/ProjectService";
 import {QUERY_GC_TIME, QUERY_STALE_TIME} from "@config/query.config";
@@ -16,7 +16,6 @@ export interface ProjectDetailContext {
     projectDetail: ProjectDetailResponse;
     allTasks: TaskResponse[] | undefined;
     filteredKanbanTasks: TaskResponse[];
-    filteredListTasks: TaskResponse[];
 }
 
 export const ProjectDetailPage: React.FC = () => {
@@ -41,9 +40,7 @@ export const ProjectDetailPage: React.FC = () => {
         staleTime: QUERY_STALE_TIME.SHORT,
     });
     const filterControls = useTaskFilter(tasks);
-    const filterControlsList = useTaskFilter(tasks);
     const showKanbanFilterBar = location.pathname.endsWith('/kanban');
-    const showListFilterBar = location.pathname.endsWith('/list');
     if (isLoadingProject || isLoadingTasks) {
         return (
             <div className="flex w-full justify-center h-full items-center gap-2 text-gray-600">
@@ -62,7 +59,6 @@ export const ProjectDetailPage: React.FC = () => {
         projectDetail: projectDetail!,
         allTasks: tasks,
         filteredKanbanTasks: filterControls.filteredTasks,
-        filteredListTasks: filterControlsList.filteredTasks
     };
 
     return (
@@ -74,14 +70,6 @@ export const ProjectDetailPage: React.FC = () => {
                         <SearchTaskBar
                             project={projectDetail}
                             {...filterControls}
-                        />
-                    </div>
-                )}
-                {showListFilterBar&& projectDetail && (
-                    <div className={"flex-shrink-0"}>
-                        <SearchTaskBar
-                            project={projectDetail}
-                            {...filterControlsList}
                         />
                     </div>
                 )}

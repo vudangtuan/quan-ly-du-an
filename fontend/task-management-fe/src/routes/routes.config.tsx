@@ -1,5 +1,4 @@
 import {LoginPage} from '@/features/auth/pages/LoginPage';
-import {DashboardPage} from "@features/dashboards/pages/DashboardPage";
 import {Navigate} from "react-router-dom";
 import {MainLayout} from "@components/layout/MainLayout";
 import {ProjectsPage} from "@features/projects/pages/ProjectsPage";
@@ -28,8 +27,7 @@ export const routesConfig = [
                 path: '/',
                 element: <MainLayout/>,
                 children: [
-                    {path: '/', element: <Navigate to="/dashboard" replace/>},
-                    {path: '/dashboard', element: <DashboardPage/>},
+                    {path: '/', element: <Navigate to="/mytasks" replace/>},
                     {path: '/projects', element: <ProjectsPage/>},
                     {path: '/mytasks',element: <MyTasksPage/>},
                     {path:'/settings',element: <SettingsPage/>},

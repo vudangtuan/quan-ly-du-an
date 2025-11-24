@@ -38,4 +38,6 @@ public interface TaskService {
     void deleteComment(String commentId);
 
     CommentResponse updateComment(String projectId,String commentId, String body);
+
+    List<TaskResponse> getMyTasks();
 }

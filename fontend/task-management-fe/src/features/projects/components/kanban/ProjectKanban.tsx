@@ -1,5 +1,5 @@
 import React, {useEffect, useMemo, useState} from "react";
-import {useOutletContext} from "react-router-dom";
+import {useOutletContext, useSearchParams} from "react-router-dom";
 import {BoardColumnResponse, ProjectDetailResponse} from "@features/projects/types/project.types";
 import {DragDropContext, Droppable, type DropResult} from "@hello-pangea/dnd";
 import {Column} from "./Column";
@@ -11,6 +11,7 @@ import {TaskService} from "@features/projects/services/TaskService";
 import {TaskResponse} from "@features/projects/types/task.types";
 import {ProjectDetailContext} from "@features/projects/pages/ProjectDetailPage";
 import {arrayMoveImmutable as arrayMove} from 'array-move';
+import {TaskDetailModal} from "@features/projects/components/kanban/TaskDetailModal";
 
 
 export const ProjectKanban: React.FC = () => {
@@ -21,6 +22,17 @@ export const ProjectKanban: React.FC = () => {
     const [sortColumns, setSortColumns] = useState<BoardColumnResponse[]>([]);
     const [taskColumns, setTaskColumns] = useState<Record<string, TaskResponse[]>>({});
 
+    const [searchParams, setSearchParams] = useSearchParams();
+    const taskIdFromUrl = searchParams.get("taskId");
+
+    // Hàm đóng Modal: Xóa taskId khỏi URL
+    const handleCloseTaskDetail = () => {
+        setSearchParams((prev) => {
+            const newParams = new URLSearchParams(prev);
+            newParams.delete("taskId");
+            return newParams;
+        });
+    };
 
     // Organize tasks by column
     useEffect(() => {
@@ -253,77 +265,84 @@ export const ProjectKanban: React.FC = () => {
     };
 
     return (
-        <DragDropContext onDragEnd={onDragEnd}>
-            <Droppable droppableId="all-columns" direction="horizontal" type="COLUMN">
-                {(provided) => (
-                    <div
-                        className="flex h-full gap-4 p-3 items-start overflow-auto"
-                        {...provided.droppableProps}
-                        ref={provided.innerRef}
-                    >
-                        {sortColumns.map((column, index) => (
-                            <Column
-                                key={column.boardColumnId}
-                                column={column}
-                                tasks={taskColumns[column.boardColumnId] || []}
-                                index={index}
-                            />
-                        ))}
-                        {provided.placeholder}
-                        {canManage && (
-                            isAdding ? (
-                                <div
-                                    className="flex-shrink-0 cursor-default w-80 bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <>
+            <DragDropContext onDragEnd={onDragEnd}>
+                <Droppable droppableId="all-columns" direction="horizontal" type="COLUMN">
+                    {(provided) => (
+                        <div
+                            className="flex h-full gap-4 p-3 items-start overflow-auto"
+                            {...provided.droppableProps}
+                            ref={provided.innerRef}
+                        >
+                            {sortColumns.map((column, index) => (
+                                <Column
+                                    key={column.boardColumnId}
+                                    column={column}
+                                    tasks={taskColumns[column.boardColumnId] || []}
+                                    index={index}
+                                />
+                            ))}
+                            {provided.placeholder}
+                            {canManage && (
+                                isAdding ? (
                                     <div
-                                        className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200 px-4 py-3">
-                                        <form onSubmit={handleSubmit} className="flex items-center gap-2">
-                                            <input
-                                                type="text"
-                                                value={newName}
-                                                onChange={(e) => setNewName(e.target.value)}
-                                                className="flex-1 px-2 py-1 text-sm font-semibold border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                autoFocus
-                                                required
-                                            />
-                                            <button
-                                                type="submit"
-                                                disabled={!newName.trim() || createColumnMutation.isPending}
-                                                className="p-1 cursor-pointer disabled:cursor-no-drop text-green-600 hover:bg-green-50 rounded"
-                                            >
-                                                <Check className="h-4 w-4"/>
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={handleCancel}
-                                                disabled={createColumnMutation.isPending}
-                                                className="p-1 cursor-pointer text-red-600 hover:bg-red-50 rounded"
-                                            >
-                                                <X className="h-4 w-4"/>
-                                            </button>
-                                        </form>
+                                        className="flex-shrink-0 cursor-default w-80 bg-white rounded-xl border border-gray-200 overflow-hidden">
+                                        <div
+                                            className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200 px-4 py-3">
+                                            <form onSubmit={handleSubmit} className="flex items-center gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={newName}
+                                                    onChange={(e) => setNewName(e.target.value)}
+                                                    className="flex-1 px-2 py-1 text-sm font-semibold border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    autoFocus
+                                                    required
+                                                />
+                                                <button
+                                                    type="submit"
+                                                    disabled={!newName.trim() || createColumnMutation.isPending}
+                                                    className="p-1 cursor-pointer disabled:cursor-no-drop text-green-600 hover:bg-green-50 rounded"
+                                                >
+                                                    <Check className="h-4 w-4"/>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={handleCancel}
+                                                    disabled={createColumnMutation.isPending}
+                                                    className="p-1 cursor-pointer text-red-600 hover:bg-red-50 rounded"
+                                                >
+                                                    <X className="h-4 w-4"/>
+                                                </button>
+                                            </form>
+                                        </div>
                                     </div>
-                                </div>
-                            ) : (
-                                <div className="flex-shrink-0 w-80 mr-10">
-                                    <button
-                                        onClick={() => setIsAdding(true)}
-                                        className="w-full cursor-pointer h-32 bg-white/50 hover:bg-white border-2 border-dashed border-gray-300 hover:border-blue-400 rounded-xl transition-all group"
-                                    >
-                                        <div className="flex flex-col items-center justify-center gap-2">
-                                            <Plus
-                                                className="h-6 w-6 text-gray-400 group-hover:text-blue-500 transition-colors"/>
-                                            <span
-                                                className="text-sm font-medium text-gray-500 group-hover:text-blue-600">
+                                ) : (
+                                    <div className="flex-shrink-0 w-80 mr-10">
+                                        <button
+                                            onClick={() => setIsAdding(true)}
+                                            className="w-full cursor-pointer h-32 bg-white/50 hover:bg-white border-2 border-dashed border-gray-300 hover:border-blue-400 rounded-xl transition-all group"
+                                        >
+                                            <div className="flex flex-col items-center justify-center gap-2">
+                                                <Plus
+                                                    className="h-6 w-6 text-gray-400 group-hover:text-blue-500 transition-colors"/>
+                                                <span
+                                                    className="text-sm font-medium text-gray-500 group-hover:text-blue-600">
                                                         Thêm cột mới
                                                     </span>
-                                        </div>
-                                    </button>
-                                </div>
-                            )
-                        )}
-                    </div>
-                )}
-            </Droppable>
-        </DragDropContext>
+                                            </div>
+                                        </button>
+                                    </div>
+                                )
+                            )}
+                        </div>
+                    )}
+                </Droppable>
+            </DragDropContext>
+            <TaskDetailModal
+                isOpen={!!taskIdFromUrl}
+                taskId={taskIdFromUrl || ""}
+                onClose={handleCloseTaskDetail}
+            />
+        </>
     );
 };

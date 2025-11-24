@@ -213,7 +213,7 @@ public class AuthServiceImpl implements AuthService {
                 .expiresIn(expiresIn)
                 .userInfo(UserInfo.builder()
                         .userId(user.getUserId())
-                        .hasPassword(user.getPasswordHash()!=null)
+                        .hasPassword(user.getPasswordHash() != null && !user.getPasswordHash().isBlank())
                         .role(user.getRole().toString())
                         .fullName(user.getFullName())
                         .email(user.getEmail())

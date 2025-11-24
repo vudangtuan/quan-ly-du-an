@@ -34,4 +34,9 @@ public interface TaskRepository extends JpaRepository<Task, String> {
             delete from tasks where project_id=:projectId and task_id=:taskId
             """,nativeQuery = true)
     void deleteTask(String projectId, String taskId);
+
+    @Query(value = """
+            select t from Task t join t.assignees a where a.assigneeId=:userId
+            """)
+    List<Task> findAllByAssigneeId(String userId);
 }

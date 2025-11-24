@@ -25,16 +25,16 @@ interface KanbanFilterBarProps {
 }
 
 export const SearchTaskBar: React.FC<KanbanFilterBarProps> = ({
-                                                                    project,
-                                                                    filterAssignees,
-                                                                    filterLabels,
-                                                                    filterPriorities,
-                                                                    isFiltered,
-                                                                    toggleAssigneeFilter,
-                                                                    toggleLabelFilter,
-                                                                    togglePriorityFilter,
-                                                                    clearFilters
-                                                                }) => {
+                                                                  project,
+                                                                  filterAssignees,
+                                                                  filterLabels,
+                                                                  filterPriorities,
+                                                                  isFiltered,
+                                                                  toggleAssigneeFilter,
+                                                                  toggleLabelFilter,
+                                                                  togglePriorityFilter,
+                                                                  clearFilters
+                                                              }) => {
     // State đóng/mở Popover được quản lý BÊN TRONG component này
     const [isAssigneePopoverOpen, setIsAssigneePopoverOpen] = useState(false);
     const [isLabelPopoverOpen, setIsLabelPopoverOpen] = useState(false);
@@ -82,15 +82,19 @@ export const SearchTaskBar: React.FC<KanbanFilterBarProps> = ({
                         {project.members.map(member => {
                             const isSelected = filterAssignees.includes(member.userId);
                             return (
-                                <button
+                                <label
                                     key={member.userId}
-                                    onClick={() => toggleAssigneeFilter(member.userId)}
-                                    className="w-full flex items-center gap-2 p-2 hover:bg-gray-100 rounded"
+                                    className="w-full flex items-center gap-2 p-2 hover:bg-gray-100 rounded cursor-pointer"
                                 >
-                                    <div className={`w-4 h-4 border-2 rounded ${isSelected ? 'bg-blue-600 border-blue-600' : 'border-gray-300'}`} />
+                                    <input
+                                        type="checkbox"
+                                        checked={isSelected}
+                                        onChange={() => toggleAssigneeFilter(member.userId)}
+                                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                    />
                                     <Avatar fullname={member.fullName} className="h-6 w-6" />
                                     <span className="text-sm">{member.fullName}</span>
-                                </button>
+                                </label>
                             )
                         })}
                     </Popover.Content>
@@ -125,19 +129,23 @@ export const SearchTaskBar: React.FC<KanbanFilterBarProps> = ({
                         {project.labels.map(label => {
                             const isSelected = filterLabels.includes(label.labelId);
                             return (
-                                <button
+                                <label
                                     key={label.labelId}
-                                    onClick={() => toggleLabelFilter(label.labelId)}
-                                    className="w-full flex items-center gap-2 p-2 hover:bg-gray-100 rounded"
+                                    className="w-full flex items-center gap-2 p-2 hover:bg-gray-100 rounded cursor-pointer"
                                 >
-                                    <div className={`w-4 h-4 border-2 rounded ${isSelected ? 'bg-blue-600 border-blue-600' : 'border-gray-300'}`} />
+                                    <input
+                                        type="checkbox"
+                                        checked={isSelected}
+                                        onChange={() => toggleLabelFilter(label.labelId)}
+                                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                    />
                                     <span
                                         className="px-2 py-0.5 rounded text-xs font-medium"
                                         style={{ backgroundColor: `${label.color}20`, color: label.color }}
                                     >
                                         {label.name}
                                     </span>
-                                </button>
+                                </label>
                             )
                         })}
                     </Popover.Content>
@@ -172,15 +180,19 @@ export const SearchTaskBar: React.FC<KanbanFilterBarProps> = ({
                         {PRIORITY_OPTIONS.map(option => {
                             const isSelected = filterPriorities.includes(option.value);
                             return (
-                                <button
+                                <label
                                     key={option.value}
-                                    onClick={() => togglePriorityFilter(option.value)}
-                                    className="w-full flex items-center gap-2 p-2 hover:bg-gray-100 rounded"
+                                    className="w-full flex items-center gap-2 p-2 hover:bg-gray-100 rounded cursor-pointer"
                                 >
-                                    <div className={`w-4 h-4 border-2 rounded ${isSelected ? 'bg-blue-600 border-blue-600' : 'border-gray-300'}`} />
+                                    <input
+                                        type="checkbox"
+                                        checked={isSelected}
+                                        onChange={() => togglePriorityFilter(option.value)}
+                                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                    />
                                     {option.icon}
                                     <span className="text-sm">{option.label}</span>
-                                </button>
+                                </label>
                             )
                         })}
                     </Popover.Content>
@@ -188,4 +200,4 @@ export const SearchTaskBar: React.FC<KanbanFilterBarProps> = ({
             </Popover.Root>
         </div>
     );
-}
+};

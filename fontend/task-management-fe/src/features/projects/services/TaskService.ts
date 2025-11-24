@@ -87,4 +87,7 @@ export const TaskService = {
     updateComment: async (projectId: string, taskId: string, commentId: string, body: string): Promise<CommentResponse> => {
         return await privateApi.put(`/project/${projectId}/task/${taskId}/comment/${commentId}`, {body: body});
     },
+    getMyTask: async (): Promise<TaskResponse[]> => {
+        return await privateApi.get(`/tasks/me`);
+    }
 };

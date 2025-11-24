@@ -29,4 +29,6 @@ public class TaskResponse {
     private String creatorId;
     private List<String> assigneeIds;
     private List<String> labelIds;
+
+    private String projectName;
 }
