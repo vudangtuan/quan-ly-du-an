@@ -29,13 +29,13 @@ public interface TaskService {
 
     CheckListResponse createCheckList(String projectId, String taskId, String body);
 
-    CheckListResponse updateCheckList(String taskId,String checkListId, String body, Boolean done);
+    CheckListResponse updateCheckList(String projectId,String taskId,String checkListId, String body, Boolean done);
 
-    void deleteCheckList(String taskId,String checkListId);
+    void deleteCheckList(String projectId,String taskId,String checkListId);
 
     CommentResponse createComment(String projectId, String taskId, String body);
 
-    void deleteComment(String taskId,String commentId);
+    void deleteComment(String projectId,String taskId,String commentId);
 
     CommentResponse updateComment(String projectId,String taskId,String commentId, String body);
 

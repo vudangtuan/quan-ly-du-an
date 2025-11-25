@@ -22,7 +22,9 @@ export const MyTasksPage: React.FC = () => {
     const {data:tasks,isLoading} = useQuery({
         queryKey:['tasks',userId],
         queryFn:()=>TaskService.getMyTask(),
-        enabled: !!userId
+        enabled: !!userId,
+        staleTime: QUERY_STALE_TIME.SHORT,
+        gcTime: QUERY_GC_TIME.SHORT
     });
 
     const [filters, setFilters] = useState<FilterState>({

@@ -2,6 +2,8 @@ package com.tuanhust.coreservice.service.impl;
 
 import com.tuanhust.coreservice.client.AuthServiceClient;
 import com.tuanhust.coreservice.config.UserPrincipal;
+import com.tuanhust.coreservice.dto.ActionType;
+import com.tuanhust.coreservice.dto.ActivityEvent;
 import com.tuanhust.coreservice.entity.BoardColumn;
 import com.tuanhust.coreservice.entity.Label;
 import com.tuanhust.coreservice.entity.Project;
@@ -9,6 +11,7 @@ import com.tuanhust.coreservice.entity.ProjectMember;
 import com.tuanhust.coreservice.entity.enums.Role;
 import com.tuanhust.coreservice.entity.enums.Status;
 import com.tuanhust.coreservice.entity.ids.ProjectMemberID;
+import com.tuanhust.coreservice.publisher.ActivityPublisher;
 import com.tuanhust.coreservice.repository.BoardColumnRepository;
 import com.tuanhust.coreservice.repository.LabelRepository;
 import com.tuanhust.coreservice.repository.ProjectMemberRepository;
@@ -44,6 +47,8 @@ public class ProjectServiceImpl implements ProjectService {
     private final LabelRepository labelRepository;
     private final BoardColumnRepository boardColumnRepository;
     private final AuthServiceClient authClient;
+    private final ActivityPublisher activityPublisher;
+
 
     @Override
     @Transactional
@@ -80,6 +85,11 @@ public class ProjectServiceImpl implements ProjectService {
         project.setMembers(members);
 
         Project savedProject = projectRepository.save(project);
+
+        publishProjectActivity(savedProject.getProjectId(),ActionType.CREATE_PROJECT,
+                "Đã tạo dự án",savedProject.getProjectId(),
+                savedProject.getName(),null);
+
 
         return ProjectResponse.builder()
                 .projectId(savedProject.getProjectId())
@@ -136,9 +146,45 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = projectRepository.findById(projectId).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dự án không tồn tại")
         );
-        project.setName(request.getName());
-        project.setDescription(request.getDescription());
-        project.setDueAt(request.getDueAt());
+
+        List<String> changes = new ArrayList<>();
+        Map<String,Object> metadata = new HashMap<>();
+
+        if(!Objects.equals(project.getName(), request.getName())&&
+                request.getName()!=null && !request.getName().trim().isEmpty()){
+
+            changes.add("tên dự án");
+            metadata.put("oldName", project.getName());
+            metadata.put("newName", request.getName());
+
+
+            project.setName(request.getName());
+        }
+        if(!Objects.equals(project.getDescription(), request.getDescription())){
+
+            changes.add("mô tả");
+            metadata.put("oldDescription", project.getDescription());
+            metadata.put("newDescription", request.getDescription());
+
+            project.setDescription(request.getDescription());
+        }
+
+       if(!Objects.equals(project.getDueAt(), request.getDueAt())){
+           changes.add("deadline");
+           metadata.put("oldDueAt", project.getDueAt());
+           metadata.put("newDueAt", request.getDueAt());
+
+           project.setDueAt(request.getDueAt());
+       }
+
+        if (!changes.isEmpty()) {
+            String description = String.format(
+                    "Đã cập nhật dự án: %s",
+                    String.join(", ", changes)
+            );
+           publishProjectActivity(projectId,ActionType.UPDATE_PROJECT,description,
+                   projectId,project.getName(),metadata);
+        }
     }
 
     @Override
@@ -149,6 +195,9 @@ public class ProjectServiceImpl implements ProjectService {
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dự án không tồn tại")
         );
         project.setStatus(Status.ARCHIVED);
+
+        publishProjectActivity(projectId,ActionType.ARCHIVE_PROJECT,"Đã lưu trữ dự án",
+                projectId,project.getName(),null);
     }
 
     @Override
@@ -160,6 +209,9 @@ public class ProjectServiceImpl implements ProjectService {
                         "Dự án không tồn tại or chưa được lưu trữ")
         );
         project.setStatus(Status.ACTIVE);
+
+        publishProjectActivity(projectId,ActionType.RESTORE_PROJECT,"Đã khôi phục dự án",
+                projectId,project.getName(),null);
     }
 
     @Override
@@ -170,6 +222,9 @@ public class ProjectServiceImpl implements ProjectService {
         if (row == 0) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,
                     "Dự án không tồn tại");
+        }else {
+            publishProjectActivity(projectId,ActionType.DELETE_PROJECT,"Đã xóa dự án",
+                    projectId,"",null);
         }
     }
 
@@ -249,7 +304,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional
-    @CacheEvict(value = {"projectDetail"})
+    @CacheEvict(value = {"projectDetail"},key = "#projectId")
     public void updateMemberRole(String projectId, String userId, Role role) {
         ProjectMember projectMember = projectMemberRepository
                 .findById(new ProjectMemberID(projectId, userId))
@@ -262,7 +317,17 @@ public class ProjectServiceImpl implements ProjectService {
                     "Không thể thay đổi vai trò của quản lý");
         }
         if (!role.equals(projectMember.getRole())) {
+            UserPrincipal userPrincipal = authClient.getUsers(List.of(projectMember.getMemberId()))
+                    .stream().findFirst().orElseThrow(
+                            () -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Không tìm thấy user")
+                    );
+            Map<String,Object> map = new HashMap<>();
+            map.put("ole role", projectMember.getRole());
+            map.put("new role",role);
             projectMember.setRole(role);
+
+            publishProjectActivity(projectId,ActionType.UPDATE_ROLE,"Đã cập nhập vai trò: "+userPrincipal.getFullName(),
+                    projectMember.getMemberId(), userPrincipal.getFullName(),map);
         }
     }
 
@@ -293,6 +358,11 @@ public class ProjectServiceImpl implements ProjectService {
                     .stream().findFirst().orElseThrow(
                             () -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Không tìm thấy user")
                     );
+
+            publishProjectActivity(projectMember.getProjectId(),ActionType.ADD_MEMBER,
+                    "Đã thêm: "+userPrincipal.getFullName(),
+                    projectMember.getMemberId(),userPrincipal.getFullName(),null);
+
             return ProjectMemberResponse.builder()
                     .userId(saved.getMemberId())
                     .email(userPrincipal.getEmail())
@@ -308,7 +378,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional
-    @CacheEvict(value = {"projectDetail"}, allEntries = true)
+    @CacheEvict(value = {"projectDetail"},key = "#projectId")
     public void deleteMember(String memberId, String projectId) {
         ProjectMember projectMember = projectMemberRepository
                 .findById(new ProjectMemberID(projectId, memberId))
@@ -320,6 +390,15 @@ public class ProjectServiceImpl implements ProjectService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Không thể xóa quản lý");
         }
         projectMemberRepository.delete(projectMember);
+
+        UserPrincipal userPrincipal = authClient.getUsers(List.of(memberId))
+                .stream().findFirst().orElseThrow(
+                        () -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Không tìm thấy user")
+                );
+
+        publishProjectActivity(projectId,ActionType.DELETE_MEMBER,
+                "Đã xóa: "+userPrincipal.getFullName(),
+                memberId,userPrincipal.getFullName(),null);
     }
 
     @Override
@@ -335,6 +414,7 @@ public class ProjectServiceImpl implements ProjectService {
                 .project(project)
                 .build();
         Label saved = labelRepository.save(label);
+
         return LabelResponse.builder()
                 .labelId(saved.getLabelId())
                 .name(saved.getName())
@@ -353,6 +433,7 @@ public class ProjectServiceImpl implements ProjectService {
                         () -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                                 "Nhãn không tồn tại trong dự án or đã bị xóa")
                 );
+
         label.setName(request.getName());
         label.setColor(request.getColor());
         return LabelResponse.builder()
@@ -493,5 +574,28 @@ public class ProjectServiceImpl implements ProjectService {
                 .getContext()
                 .getAuthentication()
                 .getPrincipal();
+    }
+
+    private void publishProjectActivity(String projectId,
+                                        ActionType actionType,
+                                        String description,
+                                        String targetId,
+                                        String targetName,
+                                        Map<String, Object> metadata) {
+        UserPrincipal userCurrent = getCurrentUser();
+
+        ActivityEvent event = ActivityEvent.builder()
+                .projectId(projectId)
+                .actorId(userCurrent.getUserId())
+                .actorName(userCurrent.getFullName())
+                .actorEmail(userCurrent.getEmail())
+                .actionType(actionType)
+                .description(description)
+                .targetId(targetId)
+                .targetName(targetName)
+                .metadata(metadata)
+                .build();
+
+        activityPublisher.publish(event);
     }
 }

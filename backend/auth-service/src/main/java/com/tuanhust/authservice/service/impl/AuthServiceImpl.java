@@ -164,7 +164,7 @@ public class AuthServiceImpl implements AuthService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Passwords do not match");
         }
         if(!passwordEncoder.matches(updatePassword.getPassword(),user.getPasswordHash())){
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,"Wrong Password");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Wrong Password");
         }
         user.setPasswordHash(passwordEncoder.encode(updatePassword.getNewPassword()));
     }

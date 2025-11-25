@@ -19,8 +19,6 @@ public interface TaskRepository extends JpaRepository<Task, String> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<Double> getMaxSortOrder(String projectId, String boardColumnId);
 
-    List<Task> findAllByProjectId(String projectId);
-
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<Task> findTaskByProjectIdAndTaskId(String projectId, String taskId);
 
@@ -28,12 +26,6 @@ public interface TaskRepository extends JpaRepository<Task, String> {
             select * from tasks where project_id=:projectId and task_id=:taskId and status='ARCHIVED' for no key update
             """, nativeQuery = true)
     Optional<Task> findArchiveTaskByProjectIdAndTaskId(String projectId, String taskId);
-
-    @Modifying
-    @Query(value = """
-            delete from tasks where project_id=:projectId and task_id=:taskId
-            """,nativeQuery = true)
-    void deleteTask(String projectId, String taskId);
 
     @Query(value = """
             select t from Task t join t.assignees a where a.assigneeId=:userId

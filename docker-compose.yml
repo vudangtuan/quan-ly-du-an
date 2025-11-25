@@ -26,14 +26,24 @@ services:
       - redis_data:/data
     restart: unless-stopped
 
-#  rabbitmq:
-#    image: rabbitmq:3-management
-#    ports:
-#      - "5672:5672"
-#      - "15672:15672"
-#    environment:
-#      RABBITMQ_DEFAULT_USER: guest
-#      RABBITMQ_DEFAULT_PASS: guest
+  rabbitmq:
+    image: rabbitmq:management-alpine
+    container_name: rb_tm
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+
+  mongo:
+    image: mongo:8.2.2
+    container_name: mongo_tm
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
 
   eureka-server:
     build: ./backend/eureka-server
@@ -44,8 +54,6 @@ services:
       test: [ "CMD", "curl", "-f", "http://localhost:8761/actuator/health" ]
       interval: 30s
       retries: 3
-
-
 
   auth-service:
     build: ./backend/auth-service
@@ -81,6 +89,7 @@ services:
       - REDIS_HOST=redis
       - INTERNAL_SECRET_KEY=${INTERNAL_SECRET_KEY}
       - EUREKA_URI=${EUREKA_URI}
+      - JWT_PUBLIC_KEY_PATH=file:/app/certs/public_key.pem
     depends_on:
       - postgres
       - redis
@@ -98,7 +107,22 @@ services:
       - auth-service
       - core-service
 
+  activity-service:
+    build: ./backend/activity-service
+    container_name: activity-service
+    ports:
+      - "8002:8002"
+    environment:
+      - SPRING_DATA_MONGODB_URI=mongodb://mongo:27017/activity_db
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - EUREKA_URI=${EUREKA_URI}
+    depends_on:
+      - eureka-server
+      - mongo
+      - rabbitmq
+
 volumes:
   pg_data:
   redis_data:
+  mongo_data:
 

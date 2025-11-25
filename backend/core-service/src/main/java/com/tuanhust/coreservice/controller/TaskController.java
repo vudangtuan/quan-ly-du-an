@@ -139,7 +139,7 @@ public class TaskController {
             @RequestParam(required = false) Boolean done
     ) {
         return ResponseEntity.ok(ApiResponse.success(
-                taskService.updateCheckList(taskId,checkListId, body, done)));
+                taskService.updateCheckList(projectId,taskId,checkListId, body, done)));
     }
 
     @DeleteMapping("/{taskId}/checkList/{checkListId}")
@@ -147,7 +147,7 @@ public class TaskController {
     public ResponseEntity<ApiResponse<Void>> deleteCheckList(
             @PathVariable String checkListId,
             @PathVariable String projectId, @PathVariable String taskId) {
-        taskService.deleteCheckList(taskId,checkListId);
+        taskService.deleteCheckList(projectId,taskId,checkListId);
         return ResponseEntity.ok(ApiResponse.success("deleted", null));
     }
 
@@ -166,7 +166,7 @@ public class TaskController {
     @DeleteMapping("/{taskId}/comment/{commentId}")
     public ResponseEntity<ApiResponse<Void>> deleteComment(
             @PathVariable String commentId, @PathVariable String projectId, @PathVariable String taskId) {
-        taskService.deleteComment(taskId,commentId);
+        taskService.deleteComment(projectId,taskId,commentId);
         return ResponseEntity.ok(ApiResponse.success("deleted", null));
     }
 

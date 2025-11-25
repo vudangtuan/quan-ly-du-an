@@ -1,14 +1,13 @@
-package com.tuanhust.authservice;
+package com.tuanhust.activityservice;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class AuthServiceApplicationTests {
+class ActivityServiceApplicationTests {
 
     @Test
     void contextLoads() {
-
     }
 
 }

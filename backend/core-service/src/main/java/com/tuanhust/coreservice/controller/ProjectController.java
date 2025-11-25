@@ -1,7 +1,11 @@
 package com.tuanhust.coreservice.controller;
 
 import com.tuanhust.coreservice.annotation.ProjectRoles;
+import com.tuanhust.coreservice.config.UserPrincipal;
+import com.tuanhust.coreservice.dto.ActionType;
+import com.tuanhust.coreservice.dto.ActivityEvent;
 import com.tuanhust.coreservice.entity.enums.Role;
+import com.tuanhust.coreservice.publisher.ActivityPublisher;
 import com.tuanhust.coreservice.request.BoardColumnRequest;
 import com.tuanhust.coreservice.request.InviteMemberRequest;
 import com.tuanhust.coreservice.request.LabelRequest;
@@ -18,6 +22,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/project")
@@ -27,9 +32,10 @@ public class ProjectController {
     @PostMapping
     public ResponseEntity<ApiResponse<ProjectResponse>> createProject(
             @Valid @RequestBody ProjectRequest request) {
+        ProjectResponse response = projectService.createProject(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Project created successfully"
-                        , projectService.createProject(request)));
+                        , response));
     }
 
     @GetMapping
