@@ -67,26 +67,12 @@ public class SessionServiceImpl implements SessionService {
         log.debug("All other sessions deleted for user: {}, kept: {}", userId, currentSessionId);
     }
 
-    @Override
-    public void updateLastAccessedTime(String sessionId) {
-        getSession(sessionId).ifPresent(s->{
-           s.setLastAccessedAt(Instant.now());
-           redisTemplate.opsForValue().set(SESSION_PREFIX + sessionId,
-                   s, ttl, TimeUnit.MILLISECONDS);
-        });
-    }
 
     @Override
     public boolean validateSession(String sessionId) {
         Optional<Session> sessionOpt = getSession(sessionId);
         if (sessionOpt.isEmpty()) {
             log.debug("Session not found: {}", sessionId);
-            return false;
-        }
-        Session session = sessionOpt.get();
-        if(session.getExpiresAt().isBefore(Instant.now())){
-            log.debug("Session has expired: {}", sessionId);
-            deleteSession(session.getUserId(),sessionId);
             return false;
         }
         return true;

@@ -40,7 +40,6 @@ jwt:
   private-key-path: classpath:keys/private_key.pem
   public-key-path: classpath:keys/public_key.pem
   access-token-expiration: 900000       # 15 minutes
-  refresh-token-expiration: 2592000000   # 30 days
   time-to-live: 604800000 # 7 days
 
 internal:
@@ -60,3 +59,4 @@ cookie:
   domain: localhost
   secure: false
   same-site: Lax
+  time-to-live: 604800 #7 days

@@ -19,6 +19,5 @@ public class Session implements Serializable {
     private String deviceInfo;
     private String ipAddress;
     private Instant createdAt;
-    private Instant expiresAt;
     private Instant lastAccessedAt;
 }

@@ -23,8 +23,9 @@ public class CookieUtil {
     @Value("${cookie.same-site:Lax}")
     private String cookieSameSite;
 
-    @Value("${jwt.refresh-token-expiration:2592000000}") // 30 days
-    private Long refreshTokenExpiration;
+    @Value("${cookie.time-to-live:604800}")
+    private Long timeToLive;
+
 
     public void addRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
 //        Cookie cookie = new Cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken);
@@ -43,7 +44,7 @@ public class CookieUtil {
                         REFRESH_TOKEN_COOKIE_NAME,
                         refreshToken,
                         cookieDomain,
-                        (int) (refreshTokenExpiration / 1000),
+                        timeToLive,
                         cookieSecure ? "Secure;" : "",
                         cookieSameSite));
         log.debug("Add cookie to response");

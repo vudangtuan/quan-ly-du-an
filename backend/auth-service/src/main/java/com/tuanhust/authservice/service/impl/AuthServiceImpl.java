@@ -39,8 +39,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Slf4j
 public class AuthServiceImpl implements AuthService {
-    @Value("${jwt.refresh-token-expiration}")
-    private long refreshTokenExpiration;
     @Value("${spring.security.oauth2.client.registration.google.client-id}")
     private String googleClientId;
 
@@ -235,7 +233,6 @@ public class AuthServiceImpl implements AuthService {
                 .deviceInfo(deviceInfo)
                 .ipAddress(ipAddress)
                 .createdAt(Instant.now())
-                .expiresAt(Instant.now().plusMillis(refreshTokenExpiration))
                 .lastAccessedAt(Instant.now())
                 .build();
     }
