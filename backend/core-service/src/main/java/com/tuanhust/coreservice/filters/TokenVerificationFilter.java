@@ -1,13 +1,14 @@
 package com.tuanhust.coreservice.filters;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tuanhust.coreservice.client.AuthServiceClient;
 import com.tuanhust.coreservice.config.UserPrincipal;
+import com.tuanhust.coreservice.jwt.JwtVerifier;
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -20,12 +21,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
 public class TokenVerificationFilter extends OncePerRequestFilter {
-    private final AuthServiceClient authServiceClient;
+    private final JwtVerifier jwtVerifier;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    private final RedisTemplate<String,Object> redisTemplate;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -40,10 +44,27 @@ public class TokenVerificationFilter extends OncePerRequestFilter {
                 return;
             }
             String token = authHeader.substring(7);
-            UserPrincipal userPrincipal = authServiceClient.verifyToken(token);
-            String role = userPrincipal.getRoles().stream().findFirst().orElseThrow(
-                    () -> new RuntimeException("Role invalid")
-            );
+            Claims claims = jwtVerifier.verify(token);
+            String sessionId = claims.get("sessionId", String.class);
+            String userId = claims.get("userId", String.class);
+            String fullName = claims.get("fullName", String.class);
+            String email = claims.getSubject();
+            String role = claims.get("role", String.class);
+
+            String redisKey = "session:" + sessionId;
+            if (!redisTemplate.hasKey(redisKey)) {
+                sendJsonError(response, "Session revoked or expired");
+                return;
+            }
+
+            UserPrincipal userPrincipal = UserPrincipal.builder()
+                    .email(email)
+                    .userId(userId)
+                    .sessionId(sessionId)
+                    .fullName(fullName)
+                    .roles(Set.of(role))
+                    .build();
+
             List<SimpleGrantedAuthority> authorities =
                     List.of(new SimpleGrantedAuthority(
                             "ROLE_" + role));

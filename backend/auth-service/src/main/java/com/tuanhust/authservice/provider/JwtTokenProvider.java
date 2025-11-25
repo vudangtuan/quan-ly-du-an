@@ -77,18 +77,7 @@ public class JwtTokenProvider {
                 .parseSignedClaims(token)
                 .getPayload();
     }
-    public String getSessionId(String token) {
-        return getClaims(token).get("sessionId", String.class);
-    }
-    public String getUserId(String token) {
-        return getClaims(token).get("userId", String.class);
-    }
-    public String getEmail(String token) {
-        return getClaims(token).getSubject();
-    }
-    public String getRole(String token) {
-        return getClaims(token).get("role", String.class);
-    }
+
 
     public Claims getClaimsFromExpiredToken(String token) {
         try {

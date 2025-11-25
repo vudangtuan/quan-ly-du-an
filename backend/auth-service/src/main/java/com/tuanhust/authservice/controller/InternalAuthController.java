@@ -13,14 +13,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @RequestMapping("/internal")
 public class InternalAuthController {
-
-    private final AuthService authService;
     private final UserService userService;
-
-    @PostMapping("/verify")
-    public ResponseEntity<UserPrincipal> verifyToken(@RequestBody String accessToken){
-        return ResponseEntity.ok(authService.verifyToken(accessToken));
-    }
 
     @PostMapping("/users")
     public ResponseEntity<List<UserPrincipal>> getUsers(@RequestBody List<String> usersId){

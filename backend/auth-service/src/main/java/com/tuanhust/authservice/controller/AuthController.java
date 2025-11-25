@@ -69,12 +69,12 @@ public class AuthController {
             HttpServletResponse response
     ){
         String refreshToken = cookieUtil.getRefreshTokenFromCookie(request)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED,
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN,
                         "Refresh token not found in cookie"));
         String authHeader = request.getHeader("Authorization");
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED
+                    HttpStatus.FORBIDDEN
                     ,"Access token not found in Authorization header");
         }
         String accessToken = authHeader.substring(7);

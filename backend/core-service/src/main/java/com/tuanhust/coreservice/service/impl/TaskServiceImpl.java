@@ -11,6 +11,8 @@ import com.tuanhust.coreservice.response.TaskDetailResponse;
 import com.tuanhust.coreservice.response.TaskResponse;
 import com.tuanhust.coreservice.service.TaskService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -119,6 +121,7 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "taskDetail", key = "#taskId")
     public TaskResponse archiveTask(String projectId, String taskId) {
         Task task = taskRepository.findTaskByProjectIdAndTaskId(projectId, taskId)
                 .orElseThrow(
@@ -131,6 +134,7 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "taskDetail", key = "#taskId")
     public TaskResponse restoreTask(String projectId, String taskId, Double sortOrder) {
         Task task = taskRepository.findArchiveTaskByProjectIdAndTaskId(projectId, taskId)
                 .orElseThrow(
@@ -149,6 +153,7 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "taskDetail", key = "#taskId")
     public void deleteTask(String projectId, String taskId) {
         taskRepository.deleteTask(projectId, taskId);
     }
@@ -168,6 +173,7 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     @Transactional
+    @Cacheable(value = "taskDetail", key = "#taskId")
     public TaskDetailResponse getTask(String projectId, String taskId) {
         Task task = taskRepository.findTaskByProjectIdAndTaskId(projectId, taskId).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nhiệm vụ không tồn tại")
@@ -216,6 +222,7 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "taskDetail", key = "#taskId")
     public void updateTask(String projectId, String taskId, TaskRequest taskRequest) {
         Task task = taskRepository.findTaskByProjectIdAndTaskId(projectId, taskId).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nhiệm vụ không tồn tại")
@@ -273,6 +280,7 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "taskDetail", key = "#taskId")
     public void updateCompletedTask(String projectId, String taskId, Boolean completed) {
         Task task = taskRepository.findTaskByProjectIdAndTaskId(projectId, taskId).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nhiệm vụ không tồn tại")
@@ -282,6 +290,7 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "taskDetail", key = "#taskId")
     public CheckListResponse createCheckList(String projectId, String taskId, String body) {
         Task task = taskRepository.findTaskByProjectIdAndTaskId(projectId, taskId).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nhiệm vụ không tồn tại")
@@ -306,7 +315,8 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     @Transactional
-    public CheckListResponse updateCheckList(String checkListId, String body, Boolean done) {
+    @CacheEvict(value = "taskDetail", key = "#taskId")
+    public CheckListResponse updateCheckList(String taskId,String checkListId, String body, Boolean done) {
         CheckList checkList = checkListRepository.findById(checkListId).orElseThrow();
         if (body != null && !body.isBlank()) {
             checkList.setBody(body);
@@ -327,12 +337,14 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     @Transactional
-    public void deleteCheckList(String checkListId) {
+    @CacheEvict(value = "taskDetail", key = "#taskId")
+    public void deleteCheckList(String taskId,String checkListId) {
         checkListRepository.deleteById(checkListId);
     }
 
     @Override
     @Transactional
+    @CacheEvict(value = "taskDetail", key = "#taskId")
     public CommentResponse createComment(String projectId, String taskId, String body) {
         Task task = taskRepository.findTaskByProjectIdAndTaskId(projectId, taskId).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nhiệm vụ không tồn tại")
@@ -364,7 +376,8 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     @Transactional
-    public void deleteComment(String commentId) {
+    @CacheEvict(value = "taskDetail", key = "#taskId")
+    public void deleteComment(String taskId,String commentId) {
         Comment comment = commentRepository.findById(commentId).orElseThrow();
         if (Objects.equals(comment.getCreatorId(), getCurrentUser().getUserId())) {
             commentRepository.delete(comment);
@@ -375,7 +388,8 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     @Transactional
-    public CommentResponse updateComment(String projectId, String commentId, String body) {
+    @CacheEvict(value = "taskDetail", key = "#taskId")
+    public CommentResponse updateComment(String projectId,String taskId, String commentId, String body) {
         Comment comment = commentRepository.findById(commentId).orElseThrow();
         if (!Objects.equals(comment.getCreatorId(), getCurrentUser().getUserId())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Bạn ko có quyền");

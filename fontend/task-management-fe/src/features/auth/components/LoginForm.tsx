@@ -24,7 +24,7 @@ export const LoginForm: React.FC = () => {
         try {
             const response: AuthResponse = await AuthService.login({ email, password });
             loginAction(response);
-            navigate('/dashboard');
+            navigate('/');
         } catch (err: any) {
             if (err.response?.data?.message) {
                 setError(err.response.data.message); // Luôn luôn lấy .message
@@ -44,7 +44,7 @@ export const LoginForm: React.FC = () => {
 
                 loginAction(response);
 
-                navigate('/dashboard');
+                navigate('/');
             } catch (err: any) {
                 console.error("Google Login Error:", err);
                 setError(err.response?.data?.message || "Đăng nhập Google thất bại");

@@ -13,7 +13,6 @@ public interface AuthService {
     AuthResponse login(LoginRequest loginRequest, HttpServletRequest request);
     AuthResponse refreshToken(String refreshToken,String accessToken);
     void logout(UserPrincipal userPrincipal);
-    UserPrincipal verifyToken(String accessToken);
     AuthResponse loginWithGoogle(String token, HttpServletRequest request);
     void createPassword(String userId, CreatePassword createPassword);
 

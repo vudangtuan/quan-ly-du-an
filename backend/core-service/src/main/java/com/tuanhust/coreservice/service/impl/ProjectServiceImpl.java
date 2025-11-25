@@ -22,6 +22,7 @@ import com.tuanhust.coreservice.service.ProjectService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -130,6 +131,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "projectDetail", key = "#projectId")
     public void updateProject(String projectId, ProjectRequest request) {
         Project project = projectRepository.findById(projectId).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dự án không tồn tại")
@@ -141,6 +143,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "projectDetail", key = "#projectId")
     public void archiveProject(String projectId) {
         Project project = projectRepository.findById(projectId).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dự án không tồn tại")
@@ -150,6 +153,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "projectDetail", key = "#projectId")
     public void unarchiveProject(String projectId) {
         Project project = projectRepository.findArchivedById(projectId).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND,
@@ -160,6 +164,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "projectDetail", key = "#projectId")
     public void deleteProject(String projectId) {
         int row = projectRepository.removeProject(projectId);
         if (row == 0) {
@@ -170,6 +175,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "projectDetail", key = "#id")
     public ProjectDetailResponse getProject(String id) {
         Project project = projectRepository.findDetailById(id).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dự án không tồn tại")
@@ -243,7 +249,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional
-    @CacheEvict(value = "projectRoles", key = "#projectId + '_' + #userId")
+    @CacheEvict(value = {"projectDetail"})
     public void updateMemberRole(String projectId, String userId, Role role) {
         ProjectMember projectMember = projectMemberRepository
                 .findById(new ProjectMemberID(projectId, userId))
@@ -263,7 +269,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional
-    @CacheEvict(value = "projectRoles", key = "#inviteMemberRequest.projectId + '_' + #inviteMemberRequest.memberId")
+    @CacheEvict(value = "projectDetail", key = "#inviteMemberRequest.projectId")
     public ProjectMemberResponse inviteMember(InviteMemberRequest inviteMemberRequest) {
         Role role = inviteMemberRequest.getRole();
         if (role == Role.EDITOR || role == Role.VIEWER || role == Role.COMMENTER) {
@@ -302,7 +308,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional
-    @CacheEvict(value = "projectRoles", key = "#projectId + '_' + #memberId")
+    @CacheEvict(value = {"projectDetail"}, allEntries = true)
     public void deleteMember(String memberId, String projectId) {
         ProjectMember projectMember = projectMemberRepository
                 .findById(new ProjectMemberID(projectId, memberId))
@@ -318,6 +324,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "projectDetail", key = "#projectId")
     public LabelResponse createLabel(String projectId, LabelRequest request) {
         Project project = projectRepository.findById(projectId).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dự án không tồn tại")
@@ -338,6 +345,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "projectDetail", key = "#projectId")
     public LabelResponse updateLabel(String projectId, String labelId,
                                      LabelRequest request) {
         Label label = labelRepository.findByProjectIdAndLabelId(projectId, labelId)
@@ -357,6 +365,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "projectDetail", key = "#projectId")
     public void deleteLabel(String projectId, String labelId) {
         try {
             labelRepository.deleteByProjectIdAndLabelId(projectId, labelId);
@@ -367,6 +376,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "projectDetail", key = "#projectId")
     public BoardColumnResponse createBoardColumn(String projectId, BoardColumnRequest request) {
         Project project = projectRepository.findByIdWithPessimisticWrite(projectId).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dự án không tồn tại")
@@ -390,6 +400,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "projectDetail", key = "#projectId")
     public BoardColumnResponse updateBoardColumn(String projectId,
                                                  String columnId,
                                                  String name,
@@ -417,6 +428,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "projectDetail", key = "#projectId")
     public void deleteBoardColumn(String projectId, String columnId) {
         try {
             boardColumnRepository.deleteByProjectIdAndBoardColumnId(projectId, columnId);
@@ -427,6 +439,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "projectDetail", key = "#projectId")
     public BoardColumnResponse archiveBoardColumn(String projectId, String columnId) {
         BoardColumn boardColumn = boardColumnRepository.
                 findByProjectIdAndBoardColumnId(projectId, columnId)
@@ -447,6 +460,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "projectDetail", key = "#projectId")
     public BoardColumnResponse restoreBoardColumn(String projectId, String columnId,
                                                   Double sortOrder) {
         BoardColumn boardColumn = boardColumnRepository.

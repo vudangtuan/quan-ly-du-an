@@ -7,7 +7,7 @@ export const PublicRoute: React.FC = () => {
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
     if (isAuthenticated) {
-        return <Navigate to="/dashboard" replace />;
+        return <Navigate to="/" replace />;
     }
 
     // Nếu chưa đăng nhập, hiển thị component con (ví dụ: LoginPage)

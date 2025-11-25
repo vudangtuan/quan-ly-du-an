@@ -139,15 +139,15 @@ public class TaskController {
             @RequestParam(required = false) Boolean done
     ) {
         return ResponseEntity.ok(ApiResponse.success(
-                taskService.updateCheckList(checkListId, body, done)));
+                taskService.updateCheckList(taskId,checkListId, body, done)));
     }
 
     @DeleteMapping("/{taskId}/checkList/{checkListId}")
     @ProjectRoles(roles = {"OWNER", "EDITOR", "COMMENTER"})
     public ResponseEntity<ApiResponse<Void>> deleteCheckList(
-            @PathVariable String checkListId
-    ) {
-        taskService.deleteCheckList(checkListId);
+            @PathVariable String checkListId,
+            @PathVariable String projectId, @PathVariable String taskId) {
+        taskService.deleteCheckList(taskId,checkListId);
         return ResponseEntity.ok(ApiResponse.success("deleted", null));
     }
 
@@ -165,8 +165,8 @@ public class TaskController {
 
     @DeleteMapping("/{taskId}/comment/{commentId}")
     public ResponseEntity<ApiResponse<Void>> deleteComment(
-            @PathVariable String commentId) {
-        taskService.deleteComment(commentId);
+            @PathVariable String commentId, @PathVariable String projectId, @PathVariable String taskId) {
+        taskService.deleteComment(taskId,commentId);
         return ResponseEntity.ok(ApiResponse.success("deleted", null));
     }
 
@@ -174,9 +174,9 @@ public class TaskController {
     public ResponseEntity<ApiResponse<CommentResponse>> updateComment(
             @PathVariable String projectId,
             @PathVariable String commentId,
-            @RequestBody @Valid CommentRequest commentRequest) {
+            @RequestBody @Valid CommentRequest commentRequest, @PathVariable String taskId) {
         return ResponseEntity.ok(ApiResponse.success(
-                taskService.updateComment(projectId,commentId,commentRequest.getBody())
+                taskService.updateComment(projectId,taskId,commentId,commentRequest.getBody())
         ));
     }
 }

@@ -80,7 +80,7 @@ public class AuthServiceImpl implements AuthService {
         String email = claims.getSubject();
 
         if(!sessionService.validateSessionWithRefreshToken(sessionId,refreshToken)){
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "Session is invalid or expired");
         }
         User user = userRepository.findByEmail(email)
@@ -97,36 +97,6 @@ public class AuthServiceImpl implements AuthService {
         sessionService.deleteSession(userPrincipal.getUserId(),userPrincipal.getSessionId());
     }
 
-    @Override
-    public UserPrincipal verifyToken(String accessToken) {
-        if(!jwtTokenProvider.validateToken(accessToken)){
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,"Invalid token");
-        }
-        Claims claims = jwtTokenProvider.getClaims(accessToken);
-        String sessionId = claims.get("sessionId", String.class);
-        String userId = claims.get("userId", String.class);
-        String fullName = claims.get("fullName", String.class);
-        String email = claims.getSubject();
-        String role = claims.get("role", String.class);
-
-        if(!userRepository.existsByEmail(email)){
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
-                    "Email not found");
-        }
-
-        if(!sessionService.validateSession(sessionId)){
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
-                    "Session is invalid or expired");
-        }
-
-        return UserPrincipal.builder()
-                .email(email)
-                .userId(userId)
-                .sessionId(sessionId)
-                .fullName(fullName)
-                .roles(Set.of(role))
-                .build();
-    }
 
     @Override
     @Transactional

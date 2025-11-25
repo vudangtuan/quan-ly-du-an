@@ -29,15 +29,15 @@ public interface TaskService {
 
     CheckListResponse createCheckList(String projectId, String taskId, String body);
 
-    CheckListResponse updateCheckList(String checkListId, String body, Boolean done);
+    CheckListResponse updateCheckList(String taskId,String checkListId, String body, Boolean done);
 
-    void deleteCheckList(String checkListId);
+    void deleteCheckList(String taskId,String checkListId);
 
     CommentResponse createComment(String projectId, String taskId, String body);
 
-    void deleteComment(String commentId);
+    void deleteComment(String taskId,String commentId);
 
-    CommentResponse updateComment(String projectId,String commentId, String body);
+    CommentResponse updateComment(String projectId,String taskId,String commentId, String body);
 
     List<TaskResponse> getMyTasks();
 }
