@@ -96,8 +96,11 @@ public class ProjectController {
 
     @GetMapping("/{projectId}")
     @ProjectRoles
-    public ResponseEntity<ApiResponse<ProjectDetailResponse>> getProject(@PathVariable String projectId) {
-        return ResponseEntity.ok(ApiResponse.success(projectService.getProject(projectId)));
+    public ResponseEntity<ApiResponse<ProjectDetailResponse>> getProject(
+            @PathVariable String projectId) {
+        ProjectDetailResponse response = projectService.getProject(projectId);
+        response.setCurrentRoleInProject(projectService.getCurrentRoleInProject(projectId));
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @PostMapping("/{projectId}/members")

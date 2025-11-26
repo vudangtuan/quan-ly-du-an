@@ -45,6 +45,7 @@ public class Project {
     private Status status;
 
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "project")
+    @OrderBy("name ASC")
     private Set<Label> labels;
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "project")
     @OrderBy("sortOrder ASC")
@@ -52,6 +53,7 @@ public class Project {
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "project")
     @OrderBy("joinedAt ASC")
     private Set<ProjectMember> members;
+    @OrderBy("completed ASC, priority DESC ")
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "project")
     private Set<Task> tasks;
 }

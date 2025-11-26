@@ -4,6 +4,7 @@ import {ProjectInfo} from "@features/projects/components/overview/ProjectInfo";
 import {ProjectMember} from "@features/projects/components/overview/ProjectMember";
 import {ProjectLabel} from "@features/projects/components/overview/ProjectLabel";
 import {ProjectDetailContext} from "@features/projects/pages/ProjectDetailPage";
+import {ProjectActivity} from "@features/projects/components/overview/ProjectActivity";
 
 export const ProjectOverview: React.FC = () => {
     const {projectDetail:project} = useOutletContext<ProjectDetailContext>();
@@ -15,11 +16,13 @@ export const ProjectOverview: React.FC = () => {
                                projectId={project.projectId}
                                canManage={project.currentRoleInProject === 'OWNER'}
                 />
+
             </div>
             <div className="sm:col-span-2 flex flex-col gap-6">
                 <ProjectLabel labels={project.labels}
                               projectId={project.projectId}
                               canManage={project.currentRoleInProject === 'OWNER'}/>
+                <ProjectActivity/>
             </div>
         </div>
     )

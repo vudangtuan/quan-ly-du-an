@@ -1,13 +1,14 @@
 package com.tuanhust.activityservice.entity;
 
 
-import com.tuanhust.activityservice.entity.enums.ActionType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -19,6 +20,10 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 @Document(collection = "activities")
+@CompoundIndexes({
+        @CompoundIndex(name = "idx_project_created_desc", def = "{'projectId': 1, 'createdAt': -1}"),
+        @CompoundIndex(name = "idx_task_created_desc", def = "{'taskId': 1, 'createdAt': -1}")
+})
 public class Activity {
     @Id
     private String id;
@@ -32,7 +37,7 @@ public class Activity {
     private String actorName;
     private String actorEmail;
 
-    private ActionType actionType;
+    private String actionType;
     private String description;
 
     private String targetId;

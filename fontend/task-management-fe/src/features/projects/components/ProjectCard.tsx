@@ -1,6 +1,6 @@
 import React, {useMemo, useState} from 'react';
 import type {PaginatedResponse, ProjectResponse} from '../types/project.types';
-import {AlertTriangle, Archive, CalendarDays, Edit, Eye, Trash2, Users} from 'lucide-react';
+import {AlertTriangle, Archive, CalendarDays, Crown, Edit, Eye, Trash2, Users} from 'lucide-react';
 import {ContextMenu, MenuItem} from "@components/MenuContext";
 import {useNavigate} from "react-router-dom";
 import {EditProjectModal} from "@features/projects/components/EditProjectModal";
@@ -185,10 +185,18 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({project}) => {
                  bg-white shadow-sm transition-all duration-200">
                     <div className="flex flex-col gap-4 p-5 pr-7">
                         {/* 1. Tên dự án */}
-                        <div className="flex items-start mt-2 justify-between min-h-[4rem]">
+                        <div className="flex items-start gap-1 mt-2 justify-start min-h-[4rem]">
                             <h3 className="text-lg font-semibold text-gray-900 line-clamp-2 ">
                                 {project.name}
                             </h3>
+                            {project.currentRoleInProject==='OWNER' && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5
+                                                   bg-amber-50 text-amber-700 text-xs font-medium
+                                                   rounded-full w-fit">
+                                        <Crown className="h-3 w-3" />
+                                        Của tôi
+                                    </span>
+                            )}
                         </div>
 
                         {/* 2. Mô tả */}

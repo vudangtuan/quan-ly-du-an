@@ -6,7 +6,7 @@ import type {
     PaginatedResponse, ProjectDetailResponse, ProjectMemberResponse,
     ProjectResponse, ProjectRole,
 } from '../types/project.types';
-import {data} from "react-router-dom";
+
 
 interface GetProjectsParams {
     page?: number;

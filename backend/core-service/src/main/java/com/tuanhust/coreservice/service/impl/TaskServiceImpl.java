@@ -1,5 +1,6 @@
 package com.tuanhust.coreservice.service.impl;
 
+import com.tuanhust.coreservice.client.AuthServiceClient;
 import com.tuanhust.coreservice.config.UserPrincipal;
 import com.tuanhust.coreservice.dto.ActionType;
 import com.tuanhust.coreservice.dto.ActivityEvent;
@@ -40,6 +41,7 @@ public class TaskServiceImpl implements TaskService {
     private final ProjectMemberRepository projectMemberRepository;
     private final LabelRepository labelRepository;
     private final ActivityPublisher activityPublisher;
+    private final AuthServiceClient authServiceClient;
 
     @Override
     @Transactional
@@ -97,8 +99,8 @@ public class TaskServiceImpl implements TaskService {
         }
         Task savedTask = taskRepository.save(task);
 
-        publishTaskActivity(projectId,savedTask.getTaskId(),ActionType.CREATE_TASK,
-                "Đã tạo nhiệm vụ",savedTask.getTaskId(),savedTask.getTitle(),null);
+        publishTaskActivity(projectId, savedTask.getTaskId(), ActionType.CREATE_TASK,
+                "Đã tạo nhiệm vụ", savedTask.getTaskId(), savedTask.getTitle(), null);
 
 
         return TaskResponse.builder()
@@ -137,9 +139,9 @@ public class TaskServiceImpl implements TaskService {
         task.setStatus(Status.ARCHIVED);
         task.setSortOrder(null);
 
-        publishTaskActivity(projectId,task.getTaskId(),ActionType.ARCHIVE_TASK,
-                "Đã lưu trữ nhiệm vụ: "+ task.getTitle(),
-                task.getTaskId(),task.getTitle(),null);
+        publishTaskActivity(projectId, task.getTaskId(), ActionType.ARCHIVE_TASK,
+                "Đã lưu trữ nhiệm vụ",
+                task.getTaskId(), task.getTitle(), null);
         return maptoTaskResponse(task);
     }
 
@@ -159,9 +161,9 @@ public class TaskServiceImpl implements TaskService {
         } else {
             task.setSortOrder(sortOrder);
         }
-        publishTaskActivity(projectId,task.getTaskId(),ActionType.RESTORE_TASK,
-                "Đã khôi phục nhiệm vụ: "+ task.getTitle(),
-                task.getTaskId(),task.getTitle(),null);
+        publishTaskActivity(projectId, task.getTaskId(), ActionType.RESTORE_TASK,
+                "Đã khôi phục nhiệm vụ",
+                task.getTaskId(), task.getTitle(), null);
         return maptoTaskResponse(task);
     }
 
@@ -174,8 +176,8 @@ public class TaskServiceImpl implements TaskService {
                         () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nhiệm vụ không tồn tại")
                 );
         taskRepository.delete(task);
-        publishTaskActivity(projectId,taskId,ActionType.DELETE_TASK,
-                "Đã xóa nhiệm vụ: "+task.getTitle(),taskId,task.getTitle(),null);
+        publishTaskActivity(projectId, taskId, ActionType.DELETE_TASK,
+                "Đã xóa nhiệm vụ", taskId, task.getTitle(), null);
     }
 
     @Override
@@ -187,20 +189,21 @@ public class TaskServiceImpl implements TaskService {
                 );
         BoardColumn boardColumn = boardColumnRepository.getReferenceById(boardColumnId);
 
+        List<Map<String, Object>> changes = new ArrayList<>();
         Map<String, Object> metadata = new HashMap<>();
-        metadata.put("oldColumnId", task.getBoardColumn().getBoardColumnId());
-        metadata.put("oldColumnName", task.getBoardColumn().getName());
-        metadata.put("newColumnId", boardColumn.getBoardColumnId());
-        metadata.put("newColumnName", boardColumn.getName());
+
+        changes.add(createChangeLog("Cột", task.getBoardColumn().getName(), boardColumn.getName()));
+        changes.add(createChangeLog("Vị trí", task.getSortOrder(), sortOrder));
+
+        metadata.put("changes", changes);
 
         task.setBoardColumn(boardColumn);
         task.setSortOrder(sortOrder);
 
-        String description = "Đã di chuyển nhiệm vụ từ: "+
-                metadata.get("oldColumnName") + " -> "+ metadata.get("newColumnName");
-        publishTaskActivity(projectId,task.getTaskId(),ActionType.MOVE_TASK,
+        String description = "Đã di chuyển nhiệm vụ";
+        publishTaskActivity(projectId, task.getTaskId(), ActionType.MOVE_TASK,
                 description,
-                task.getTaskId(),task.getTitle(),metadata);
+                task.getTaskId(), task.getTitle(), metadata);
         return maptoTaskResponse(task);
     }
 
@@ -260,13 +263,11 @@ public class TaskServiceImpl implements TaskService {
         Task task = taskRepository.findTaskByProjectIdAndTaskId(projectId, taskId).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nhiệm vụ không tồn tại")
         );
-        Map<String, Object> metadata = new HashMap<>();
-        List<String> changes = new ArrayList<>();
+        List<Map<String, Object>> changes = new ArrayList<>();
 
-        if (taskRequest.getTitle() != null && !taskRequest.getTitle().isBlank()) {
-            changes.add("Tiêu đề");
-            metadata.put("oldTitle", task.getTitle());
-            metadata.put("newTitle", taskRequest.getTitle());
+        if (taskRequest.getTitle() != null && !taskRequest.getTitle().isBlank() &&
+                !taskRequest.getTitle().equals(task.getTitle())) {
+            changes.add(createChangeLog("Tiêu đề", task.getTitle(), taskRequest.getTitle()));
             task.setTitle(taskRequest.getTitle());
         }
         if (taskRequest.getLabelIds() != null) {
@@ -276,17 +277,28 @@ public class TaskServiceImpl implements TaskService {
                     throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Một số nhãn không thuộc dự án này");
                 }
             }
-            Set<TaskLabel> labels = taskRequest.getLabelIds().stream()
-                    .map(labelId -> {
-                        Label labelRef = labelRepository.getReferenceById(labelId);
-                        return TaskLabel.builder().label(labelRef).task(task).build();
-                    })
-                    .collect(Collectors.toSet());
-            changes.add("nhãn");
-            task.getTaskLabels().clear();
-            taskRepository.flush();
-            task.getTaskLabels().addAll(labels);
 
+            String oldLabels = task.getTaskLabels().stream()
+                    .map(tl -> tl.getLabel().getName())
+                    .sorted()
+                    .collect(Collectors.joining(", "));
+
+            List<Label> newLabelEntities = labelRepository.findAllById(taskRequest.getLabelIds());
+            Set<TaskLabel> labels = newLabelEntities.stream()
+                    .map(label -> TaskLabel.builder().label(label).task(task).build())
+                    .collect(Collectors.toSet());
+
+
+            String newLabels = newLabelEntities.stream()
+                    .map(Label::getName)
+                    .sorted()
+                    .collect(Collectors.joining(", "));
+            if (!oldLabels.equals(newLabels)) {
+                task.getTaskLabels().clear();
+                taskRepository.flush();
+                task.getTaskLabels().addAll(labels);
+                changes.add(createChangeLog("Nhãn", oldLabels, newLabels));
+            }
         }
 
 
@@ -297,44 +309,49 @@ public class TaskServiceImpl implements TaskService {
                     throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Một số thành viên không thuộc dự án này");
                 }
             }
+            List<String> oldAssigneeIds = task.getAssignees().stream()
+                    .map(TaskAssignee::getAssigneeId).toList();
+            String oldNames = getUserNames(oldAssigneeIds);
+
             Set<TaskAssignee> assignees = taskRequest.getAssigneeIds().stream()
                     .map(assigneeId -> TaskAssignee.builder().assigneeId(assigneeId).task(task).build())
                     .collect(Collectors.toSet());
-            task.getAssignees().clear();
-            taskRepository.flush();
-            task.getAssignees().addAll(assignees);
-            changes.add("Người làm");
+
+            String newNames = getUserNames(taskRequest.getAssigneeIds());
+            if (!oldNames.equals(newNames)) {
+                changes.add(createChangeLog("Người thực hiện", oldNames, newNames));
+                task.getAssignees().clear();
+                taskRepository.flush();
+                task.getAssignees().addAll(assignees);
+            }
         }
-        if (taskRequest.getDescription() != null) {
-            changes.add("Mô tả");
-            metadata.put("oldDes", task.getDescription());
-            metadata.put("newDes", taskRequest.getDescription());
+
+        if (taskRequest.getDescription() != null &&
+                !taskRequest.getDescription().equals(task.getDescription())) {
+            changes.add(createChangeLog("Mô tả", task.getDescription(), taskRequest.getDescription()));
+
 
             task.setDescription(taskRequest.getDescription());
         }
-        if (taskRequest.getDueAt() != null) {
-            changes.add("Deadline");
-            metadata.put("oldDue", task.getDueAt());
+        if (taskRequest.getDueAt() != null && !taskRequest.getDueAt().equals(task.getDueAt())) {
             if (taskRequest.getDueAt().equals(Instant.MIN)) {
-                metadata.put("newDue", null);
+                changes.add(createChangeLog("Hạn chót", task.getDueAt(), null));
                 task.setDueAt(null);
             } else {
-                metadata.put("newDue", taskRequest.getDueAt());
+                changes.add(createChangeLog("Hạn chót", task.getDueAt(), taskRequest.getDueAt()));
                 task.setDueAt(taskRequest.getDueAt());
             }
         }
-        if (taskRequest.getPriority() != null) {
-            changes.add("Priority");
-            metadata.put("oldPriority", task.getPriority());
-            metadata.put("newPriority", taskRequest.getPriority());
+        if (taskRequest.getPriority() != null && taskRequest.getPriority() != task.getPriority()) {
+            changes.add(createChangeLog("Ưu tiên", task.getPriority(), taskRequest.getPriority()));
             task.setPriority(taskRequest.getPriority());
         }
 
-        if(!changes.isEmpty()){
-            String des = "Đã cập nhập nhiệm vụ +"+task.getTitle()+
-                    ": "+String.join(", ", changes);
-            publishTaskActivity(projectId,taskId,ActionType.UPDATE_TASK,des,
-                    taskId,task.getTitle(),metadata);
+        if (!changes.isEmpty()) {
+            Map<String, Object> metadata = Map.of("changes", changes);
+            String des = "Đã cập nhập nhiệm vụ";
+            publishTaskActivity(projectId, taskId, ActionType.UPDATE_TASK, des,
+                    taskId, task.getTitle(), metadata);
         }
     }
 
@@ -346,10 +363,14 @@ public class TaskServiceImpl implements TaskService {
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nhiệm vụ không tồn tại")
         );
         task.setCompleted(completed);
-        if(completed){
-            publishTaskActivity(projectId,taskId,ActionType.COMPLETE_TASK,
-                    "Đã hoàn thành nhiệm vu:  "+task.getTitle(),
-                    taskId,task.getTitle(),null);
+        if (completed) {
+            publishTaskActivity(projectId, taskId, ActionType.COMPLETE_TASK,
+                    "Đã hoàn thành nhiệm vu",
+                    taskId, task.getTitle(), null);
+        }else {
+            publishTaskActivity(projectId, taskId, ActionType.INCOMPLETE_TASK,
+                    "Đã đánh dấu chưa hoàn thành nhiệm vu",
+                    taskId, task.getTitle(), null);
         }
     }
 
@@ -367,9 +388,9 @@ public class TaskServiceImpl implements TaskService {
                 .body(body)
                 .build();
         CheckList savedCheckList = checkListRepository.save(checkList);
-        publishTaskActivity(projectId,taskId,ActionType.ADD_CHECKLIST,
-                "Đã tạo công việc mới: "+savedCheckList.getBody(),
-                savedCheckList.getCheckListId(),null,null);
+        publishTaskActivity(projectId, taskId, ActionType.ADD_CHECKLIST,
+                "Đã tạo công việc mới",
+                savedCheckList.getCheckListId(), savedCheckList.getBody(), null);
         return CheckListResponse.builder()
                 .taskId(taskId)
                 .checkListId(savedCheckList.getCheckListId())
@@ -384,20 +405,18 @@ public class TaskServiceImpl implements TaskService {
     @Override
     @Transactional
     @CacheEvict(value = "taskDetail", key = "#taskId")
-    public CheckListResponse updateCheckList(String projectId,String taskId,String checkListId, String body, Boolean done) {
+    public CheckListResponse updateCheckList(String projectId, String taskId, String checkListId, String body, Boolean done) {
         CheckList checkList = checkListRepository.findById(checkListId).orElseThrow();
-        if (body != null && !body.isBlank()) {
-            checkList.setBody(body);
-            publishTaskActivity(projectId,taskId,ActionType.UPDATE_CHECKLIST,
-                    "Đã cập nhập công việc con: "+body,
-                    checkListId,null,null);
-        }
-        if (done != null) {
+        if (done != null && checkList.isDone() != done) {
             checkList.setDone(done);
-            if(done){
-                publishTaskActivity(projectId,taskId,ActionType.UPDATE_CHECKLIST,
-                        "Đã hoàn thành công việc con: "+checkList.getBody(),
-                        checkListId,null,null);
+            if (done) {
+                publishTaskActivity(projectId, taskId, ActionType.COMPLETE_CHECKLIST,
+                        "Đã hoàn thành công việc",
+                        checkListId, checkList.getBody(), null);
+            }else {
+                publishTaskActivity(projectId, taskId, ActionType.INCOMPLETE_CHECKLIST,
+                        "Đã đánh dấu chưa hoàn thành công việc",
+                        checkListId, checkList.getBody(), null);
             }
         }
         return CheckListResponse.builder()
@@ -414,12 +433,12 @@ public class TaskServiceImpl implements TaskService {
     @Override
     @Transactional
     @CacheEvict(value = "taskDetail", key = "#taskId")
-    public void deleteCheckList(String projectId,String taskId,String checkListId) {
+    public void deleteCheckList(String projectId, String taskId, String checkListId) {
         CheckList checkList = checkListRepository.findById(checkListId).orElseThrow();
         checkListRepository.delete(checkList);
-        publishTaskActivity(projectId,taskId,ActionType.DELETE_CHECKLIST,
-                "Đã xóa công việc con: "+checkList.getBody(),
-                checkListId,null,null);
+        publishTaskActivity(projectId, taskId, ActionType.DELETE_CHECKLIST,
+                "Đã xóa công việc",
+                checkListId, checkList.getBody(), null);
     }
 
     @Override
@@ -444,8 +463,8 @@ public class TaskServiceImpl implements TaskService {
         comment.setCommentMentions(commentMentions);
         Comment savedComment = commentRepository.save(comment);
 
-        publishTaskActivity(projectId,taskId,ActionType.ADD_COMMENT,
-                "Đã thêm 1 bình luận",savedComment.getCommentId(),null,null);
+        publishTaskActivity(projectId, taskId, ActionType.ADD_COMMENT,
+                "Đã thêm 1 bình luận", savedComment.getCommentId(), null, null);
 
 
         return CommentResponse.builder()
@@ -462,12 +481,12 @@ public class TaskServiceImpl implements TaskService {
     @Override
     @Transactional
     @CacheEvict(value = "taskDetail", key = "#taskId")
-    public void deleteComment(String projectId,String taskId,String commentId) {
+    public void deleteComment(String projectId, String taskId, String commentId) {
         Comment comment = commentRepository.findById(commentId).orElseThrow();
         if (Objects.equals(comment.getCreatorId(), getCurrentUser().getUserId())) {
             commentRepository.delete(comment);
-            publishTaskActivity(projectId,taskId,ActionType.DELETE_COMMENT,
-                    "Đã xóa 1 bình luận",comment.getCommentId(),null,null);
+            publishTaskActivity(projectId, taskId, ActionType.DELETE_COMMENT,
+                    "Đã xóa 1 bình luận", comment.getCommentId(), null, null);
         } else {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Bạn ko có quyền");
         }
@@ -476,14 +495,16 @@ public class TaskServiceImpl implements TaskService {
     @Override
     @Transactional
     @CacheEvict(value = "taskDetail", key = "#taskId")
-    public CommentResponse updateComment(String projectId,String taskId, String commentId, String body) {
+    public CommentResponse updateComment(String projectId, String taskId, String commentId, String body) {
         Comment comment = commentRepository.findById(commentId).orElseThrow();
         if (!Objects.equals(comment.getCreatorId(), getCurrentUser().getUserId())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Bạn ko có quyền");
         }
         if (!body.equals(comment.getBody())) {
-            Map<String,String> metadata = new HashMap<>();
-            metadata.put("old body",comment.getBody());
+            List<Map<String, Object>> changes = new ArrayList<>();
+            Map<String, Object> metadata = new HashMap<>();
+            changes.add(createChangeLog("Nội dung", comment.getBody(), body));
+            metadata.put("changes", changes);
 
             List<String> mentionIds = extractMentions(body);
             Set<CommentMentions> commentMentions = mentionIds.stream()
@@ -498,9 +519,9 @@ public class TaskServiceImpl implements TaskService {
             comment.setBody(body);
             comment.setUpdatedAt(Instant.now());
 
-            metadata.put("new body",comment.getBody());
-            publishTaskActivity(projectId,taskId,ActionType.UPDATE_COMMENT,
-                    "Đã chỉnh sửa 1 bình luận",comment.getCommentId(),null,metadata);
+
+            publishTaskActivity(projectId, taskId, ActionType.UPDATE_COMMENT,
+                    "Đã chỉnh sửa 1 bình luận", comment.getCommentId(), null, metadata);
         }
 
 
@@ -521,7 +542,7 @@ public class TaskServiceImpl implements TaskService {
     @Transactional(readOnly = true)
     public List<TaskResponse> getMyTasks() {
         List<Task> tasks = taskRepository.findAllByAssigneeId(getCurrentUser().getUserId());
-        return tasks.stream().map(task->TaskResponse.builder()
+        return tasks.stream().map(task -> TaskResponse.builder()
                 .projectId(task.getProjectId())
                 .taskId(task.getTaskId())
                 .priority(task.getPriority())
@@ -575,12 +596,12 @@ public class TaskServiceImpl implements TaskService {
         return new ArrayList<>(userIds);
     }
 
-    private void publishTaskActivity(String projectId,String taskId,
-                                        ActionType actionType,
-                                        String description,
-                                        String targetId,
-                                        String targetName,
-                                        Map<String, ?> metadata) {
+    private void publishTaskActivity(String projectId, String taskId,
+                                     ActionType actionType,
+                                     String description,
+                                     String targetId,
+                                     String targetName,
+                                     Map<String, ?> metadata) {
         UserPrincipal userCurrent = getCurrentUser();
 
         ActivityEvent event = ActivityEvent.builder()
@@ -597,5 +618,25 @@ public class TaskServiceImpl implements TaskService {
                 .build();
 
         activityPublisher.publish(event);
+    }
+
+    private String getUserNames(List<String> userIds) {
+        if (userIds == null || userIds.isEmpty()) return "";
+        try {
+            return authServiceClient.getUsers(userIds).stream()
+                    .map(UserPrincipal::getFullName)
+                    .sorted()
+                    .collect(Collectors.joining(", "));
+        } catch (Exception e) {
+            return userIds.size() + " thành viên";
+        }
+    }
+
+    private Map<String, Object> createChangeLog(String field, Object oldValue, Object newValue) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("field", field);
+        map.put("old", oldValue);
+        map.put("new", newValue);
+        return map;
     }
 }

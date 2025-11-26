@@ -10,5 +10,4 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ActivityRepository extends MongoRepository<Activity, String> {
     Page<Activity> findByProjectIdOrderByCreatedAtDesc(String projectId, Pageable pageable);
-    Page<Activity> findByTaskIdOrderByCreatedAtDesc(String taskId, Pageable pageable);
 }

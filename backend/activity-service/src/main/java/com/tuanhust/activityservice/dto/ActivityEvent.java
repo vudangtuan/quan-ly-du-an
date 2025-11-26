@@ -1,7 +1,7 @@
 package com.tuanhust.activityservice.dto;
 
 
-import com.tuanhust.activityservice.entity.enums.ActionType;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,7 +20,7 @@ public class ActivityEvent implements Serializable {
     private String actorId;
     private String actorName;
     private String actorEmail;
-    private ActionType actionType;
+    private String actionType;
     private String description;
     private Map<String, Object> metadata;
     private String targetId;

@@ -97,3 +97,25 @@ export interface ProjectDetailResponse {
 export type ProjectRole = 'OWNER' | 'EDITOR' | 'VIEWER' | 'COMMENTER'
 export type Status = 'ACTIVE' | 'ARCHIVED'
 
+export interface Activity {
+    id: string;
+    projectId: string;
+    taskId: string;
+    actorId: string;
+    actorName: string;
+    actorEmail: string;
+    actionType: string;
+    description: string;
+    targetId: string;
+    targetName: string;
+    metadata?: {
+        changes?: ChangeLog[];
+        [key: string]: any;
+    };
+}
+
+export interface ChangeLog {
+    field: string;
+    old: string | null;
+    new: string | null;
+}

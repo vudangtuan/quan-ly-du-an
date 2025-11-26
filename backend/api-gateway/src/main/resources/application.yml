@@ -18,6 +18,11 @@ spring:
               uri: lb://core-service
               predicates:
                 - Path=/api/project/**,/api/tasks/**
+            - id: activity-service
+              uri: lb://activity-service
+              predicates:
+                - Path=/api/activity/**
+
 
 eureka:
   client:

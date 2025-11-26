@@ -154,11 +154,12 @@ export const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
                 {children}
             </ContextMenu>
 
+            {openDetailTask&&
             <TaskDetailModal
                 isOpen={openDetailTask}
                 onClose={() => setOpenDetailTask(false)}
                 taskId={task.taskId}
-            />
+            />}
         </>
     );
 };

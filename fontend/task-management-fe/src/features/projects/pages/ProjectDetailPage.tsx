@@ -11,11 +11,13 @@ import {TaskResponse} from "@features/projects/types/task.types";
 import {TaskService} from "@features/projects/services/TaskService";
 import {useTaskFilter} from "@features/projects/components/kanban/useTaskFilter";
 import {SearchTaskBar} from "@features/projects/components/kanban/SearchTaskBar";
+import {useActivityStream} from "@hooks/useActivityStream";
 
 export interface ProjectDetailContext {
     projectDetail: ProjectDetailResponse;
     allTasks: TaskResponse[] | undefined;
     filteredKanbanTasks: TaskResponse[];
+    activityStream: any;
 }
 
 export const ProjectDetailPage: React.FC = () => {
@@ -23,6 +25,7 @@ export const ProjectDetailPage: React.FC = () => {
     const userId = useAuthStore.getState().userInfo?.userId;
     const queryClient = useQueryClient();
     const location = useLocation();
+    const activityStream = useActivityStream(projectId);
 
 
     const {data: projectDetail, isLoading: isLoadingProject, error: errorProject} = useQuery({
@@ -39,9 +42,11 @@ export const ProjectDetailPage: React.FC = () => {
         gcTime: QUERY_GC_TIME.SHORT,
         staleTime: QUERY_STALE_TIME.SHORT,
     });
+
+
     const filterControls = useTaskFilter(tasks);
     const showKanbanFilterBar = location.pathname.endsWith('/kanban');
-    if (isLoadingProject || isLoadingTasks) {
+    if (isLoadingProject || isLoadingTasks || activityStream.isLoading) {
         return (
             <div className="flex w-full justify-center h-full items-center gap-2 text-gray-600">
                 <Loader2 className="h-5 w-5 animate-spin text-blue-700"/>
@@ -59,6 +64,7 @@ export const ProjectDetailPage: React.FC = () => {
         projectDetail: projectDetail!,
         allTasks: tasks,
         filteredKanbanTasks: filterControls.filteredTasks,
+        activityStream: activityStream
     };
 
     return (

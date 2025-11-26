@@ -86,7 +86,6 @@ export const EditProjectModal: React.FC<EditProjectModalProps> = ({
                             ...formData
                         }
                     })
-                toast.success("Cập nhập thành công");
             }
             onClose();
         },

@@ -5,7 +5,7 @@ import {useAuthStore} from "@store/slices/authSlice";
 import {QUERY_GC_TIME, QUERY_STALE_TIME} from "@config/query.config";
 import {useNavigate} from "react-router-dom";
 import {TaskPriority, TaskResponse} from "@features/projects/types/task.types";
-import {ArrowRight, CheckCircle2, ChevronDown, Circle, Eye, FolderKanban, Loader2, Filter, X, Search} from "lucide-react";
+import {ArrowRight, ChevronDown, FolderKanban, Loader2, Filter, X, Search} from "lucide-react";
 import {formatDate, isOverdue} from "@features/utils/date.utils";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 

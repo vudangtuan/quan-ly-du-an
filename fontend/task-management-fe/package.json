@@ -24,6 +24,7 @@
     "array-move": "^4.0.0",
     "axios": "^1.13.1",
     "dhtmlx-gantt": "^9.1.0",
+    "event-source-polyfill": "^1.0.31",
     "lucide-react": "^0.548.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",

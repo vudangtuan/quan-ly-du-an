@@ -338,11 +338,12 @@ export const ProjectKanban: React.FC = () => {
                     )}
                 </Droppable>
             </DragDropContext>
+            {!!taskIdFromUrl&&
             <TaskDetailModal
                 isOpen={!!taskIdFromUrl}
                 taskId={taskIdFromUrl || ""}
                 onClose={handleCloseTaskDetail}
-            />
+            />}
         </>
     );
 };

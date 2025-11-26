@@ -118,18 +118,18 @@ const ItemMember: React.FC<ItemMemberProps> = ({member, canManage, projectId}) =
     const updateRoleMutation = useMutation({
         mutationFn: (newRole: ProjectRole) => ProjectService.updateMemberRole(projectId, member.userId, newRole),
         onSuccess: (_, newRole) => {
-            if (queryCache.find({queryKey: ["projectDetails", projectId]})) {
-                queryClient.setQueryData(["projectDetails", projectId], (oldData: ProjectDetailResponse) => {
-                    return {
-                        ...oldData,
-                        members: oldData.members.map(
-                            (m: ProjectMemberResponse) => m.userId === member.userId
-                                ? {...m, roleInProject: newRole}
-                                : m
-                        )
-                    }
-                });
-            }
+            // if (queryCache.find({queryKey: ["projectDetails", projectId]})) {
+            //     queryClient.setQueryData(["projectDetails", projectId], (oldData: ProjectDetailResponse) => {
+            //         return {
+            //             ...oldData,
+            //             members: oldData.members.map(
+            //                 (m: ProjectMemberResponse) => m.userId === member.userId
+            //                     ? {...m, roleInProject: newRole}
+            //                     : m
+            //             )
+            //         }
+            //     });
+            // }
             setIsEditingRole(false);
             toast.success('Cập nhật vai trò thành công!');
         },
@@ -235,8 +235,8 @@ const ItemMember: React.FC<ItemMemberProps> = ({member, canManage, projectId}) =
                                     </span>
                                     <span className={`flex justify-center items-center px-2.5 py-0.5 lowercase
                                         rounded-full text-xs font-medium shadow-sm whitespace-nowrap 
-                                        ${roleColors[selectedRole]}`}>
-                                        {selectedRole}
+                                        ${roleColors[member.roleInProject]}`}>
+                                        {member.roleInProject}
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-1.5 text-xs text-gray-500">

@@ -7,7 +7,7 @@ import com.tuanhust.coreservice.request.LabelRequest;
 import com.tuanhust.coreservice.request.ProjectRequest;
 import com.tuanhust.coreservice.response.*;
 import org.springframework.data.domain.Pageable;
-
+import org.springframework.transaction.annotation.Transactional;
 
 
 public interface ProjectService {
@@ -21,6 +21,7 @@ public interface ProjectService {
 
     ProjectDetailResponse getProject(String id);
 
+    Role getCurrentRoleInProject(String id);
 
     void updateMemberRole(String projectId, String userId, Role role);
 

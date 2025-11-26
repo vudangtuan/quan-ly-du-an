@@ -26,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -65,7 +66,7 @@ public class ProjectServiceImpl implements ProjectService {
 
         Set<BoardColumn> boardColumns = projectRequest.getBoardColumns()
                 .stream().peek(bc -> bc.setProject(project))
-                .peek(bc->bc.setStatus(Status.ACTIVE))
+                .peek(bc -> bc.setStatus(Status.ACTIVE))
                 .collect(Collectors.toSet());
         project.setBoardColumns(boardColumns);
 
@@ -86,9 +87,9 @@ public class ProjectServiceImpl implements ProjectService {
 
         Project savedProject = projectRepository.save(project);
 
-        publishProjectActivity(savedProject.getProjectId(),ActionType.CREATE_PROJECT,
-                "Đã tạo dự án",savedProject.getProjectId(),
-                savedProject.getName(),null);
+        publishProjectActivity(savedProject.getProjectId(), ActionType.CREATE_PROJECT,
+                "Đã tạo dự án", savedProject.getProjectId(),
+                savedProject.getName(), null);
 
 
         return ProjectResponse.builder()
@@ -147,43 +148,32 @@ public class ProjectServiceImpl implements ProjectService {
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dự án không tồn tại")
         );
 
-        List<String> changes = new ArrayList<>();
-        Map<String,Object> metadata = new HashMap<>();
+        List<Map<String, Object>> changes = new ArrayList<>();
 
-        if(!Objects.equals(project.getName(), request.getName())&&
-                request.getName()!=null && !request.getName().trim().isEmpty()){
 
-            changes.add("tên dự án");
-            metadata.put("oldName", project.getName());
-            metadata.put("newName", request.getName());
-
+        if (!Objects.equals(project.getName(), request.getName()) &&
+                request.getName() != null && !request.getName().trim().isEmpty()) {
+            changes.add(createChangeLog("Tên dự án", project.getName(), request.getName()));
 
             project.setName(request.getName());
         }
-        if(!Objects.equals(project.getDescription(), request.getDescription())){
-
-            changes.add("mô tả");
-            metadata.put("oldDescription", project.getDescription());
-            metadata.put("newDescription", request.getDescription());
-
+        if (!Objects.equals(project.getDescription(), request.getDescription())) {
+            changes.add(createChangeLog("Mô tả", project.getDescription(), request.getDescription()));
             project.setDescription(request.getDescription());
         }
 
-       if(!Objects.equals(project.getDueAt(), request.getDueAt())){
-           changes.add("deadline");
-           metadata.put("oldDueAt", project.getDueAt());
-           metadata.put("newDueAt", request.getDueAt());
+        if (!Objects.equals(project.getDueAt(), request.getDueAt())) {
+            changes.add(createChangeLog("Hạn chót", project.getDueAt(), request.getDueAt()));
 
-           project.setDueAt(request.getDueAt());
-       }
+            project.setDueAt(request.getDueAt());
+        }
 
         if (!changes.isEmpty()) {
-            String description = String.format(
-                    "Đã cập nhật dự án: %s",
-                    String.join(", ", changes)
-            );
-           publishProjectActivity(projectId,ActionType.UPDATE_PROJECT,description,
-                   projectId,project.getName(),metadata);
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put("changes", changes);
+            String description = "đã cập nhật thông tin dự án";
+            publishProjectActivity(projectId, ActionType.UPDATE_PROJECT, description,
+                    projectId, project.getName(), metadata);
         }
     }
 
@@ -196,8 +186,8 @@ public class ProjectServiceImpl implements ProjectService {
         );
         project.setStatus(Status.ARCHIVED);
 
-        publishProjectActivity(projectId,ActionType.ARCHIVE_PROJECT,"Đã lưu trữ dự án",
-                projectId,project.getName(),null);
+        publishProjectActivity(projectId, ActionType.ARCHIVE_PROJECT, "Đã lưu trữ dự án",
+                projectId, project.getName(), null);
     }
 
     @Override
@@ -210,36 +200,30 @@ public class ProjectServiceImpl implements ProjectService {
         );
         project.setStatus(Status.ACTIVE);
 
-        publishProjectActivity(projectId,ActionType.RESTORE_PROJECT,"Đã khôi phục dự án",
-                projectId,project.getName(),null);
+        publishProjectActivity(projectId, ActionType.RESTORE_PROJECT, "Đã khôi phục dự án",
+                projectId, project.getName(), null);
     }
 
     @Override
     @Transactional
     @CacheEvict(value = "projectDetail", key = "#projectId")
     public void deleteProject(String projectId) {
-        int row = projectRepository.removeProject(projectId);
-        if (row == 0) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "Dự án không tồn tại");
-        }else {
-            publishProjectActivity(projectId,ActionType.DELETE_PROJECT,"Đã xóa dự án",
-                    projectId,"",null);
-        }
+        Project project = projectRepository.findById(projectId).orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dự án không tồn tại")
+        );
+        projectRepository.delete(project);
+        publishProjectActivity(projectId, ActionType.DELETE_PROJECT, "Đã xóa dự án",
+                projectId, project.getName(), null);
     }
 
-    @Override
+
     @Transactional(readOnly = true)
     @Cacheable(value = "projectDetail", key = "#id")
     public ProjectDetailResponse getProject(String id) {
         Project project = projectRepository.findDetailById(id).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dự án không tồn tại")
         );
-        Role currentRole = projectMemberRepository.getRole(id, getCurrentUser().getUserId())
-                .orElseThrow(
-                        () -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                                "Bạn không có trong dự án or đã bị xóa")
-                );
+
         List<LabelResponse> labes = project.getLabels().stream().map(
                         l -> LabelResponse.builder()
                                 .labelId(l.getLabelId())
@@ -292,7 +276,6 @@ public class ProjectServiceImpl implements ProjectService {
                 .creator(creator)
                 .createdAt(project.getCreatedAt())
                 .updatedAt(project.getUpdatedAt())
-                .currentRoleInProject(currentRole)
                 .dueAt(project.getDueAt())
                 .status(project.getStatus())
                 .labels(labes)
@@ -301,10 +284,26 @@ public class ProjectServiceImpl implements ProjectService {
                 .build();
     }
 
+    @Transactional(readOnly = true)
+    @Cacheable(value = "roleICurrentProject", key = "#id+':'+" +
+            "#root.target.getCurrentUser().userId")
+    @Override
+    public Role getCurrentRoleInProject(String id) {
+        return projectMemberRepository.getRole(id, getCurrentUser().getUserId())
+                .orElseThrow(
+                        () -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                                "Bạn không có trong dự án or đã bị xóa")
+                );
+    }
+
 
     @Override
     @Transactional
-    @CacheEvict(value = {"projectDetail"},key = "#projectId")
+    @Caching(evict = {
+            @CacheEvict(value = "projectDetail", key = "#projectId"),
+            @CacheEvict(value = "roleICurrentProject", key = "#projectId+':'+" +
+                    "#userId")
+    })
     public void updateMemberRole(String projectId, String userId, Role role) {
         ProjectMember projectMember = projectMemberRepository
                 .findById(new ProjectMemberID(projectId, userId))
@@ -321,13 +320,16 @@ public class ProjectServiceImpl implements ProjectService {
                     .stream().findFirst().orElseThrow(
                             () -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Không tìm thấy user")
                     );
-            Map<String,Object> map = new HashMap<>();
-            map.put("ole role", projectMember.getRole());
-            map.put("new role",role);
+            List<Map<String, Object>> changes = new ArrayList<>();
+            changes.add(createChangeLog("Vai trò", projectMember.getRole(), role));
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put("changes", changes);
+
             projectMember.setRole(role);
 
-            publishProjectActivity(projectId,ActionType.UPDATE_ROLE,"Đã cập nhập vai trò: "+userPrincipal.getFullName(),
-                    projectMember.getMemberId(), userPrincipal.getFullName(),map);
+            publishProjectActivity(projectId, ActionType.UPDATE_ROLE,
+                    "Đã cập nhập vai trò",
+                    projectMember.getMemberId(), userPrincipal.getFullName(), metadata);
         }
     }
 
@@ -359,9 +361,9 @@ public class ProjectServiceImpl implements ProjectService {
                             () -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Không tìm thấy user")
                     );
 
-            publishProjectActivity(projectMember.getProjectId(),ActionType.ADD_MEMBER,
-                    "Đã thêm: "+userPrincipal.getFullName(),
-                    projectMember.getMemberId(),userPrincipal.getFullName(),null);
+            publishProjectActivity(project.getProjectId(), ActionType.ADD_MEMBER,
+                    "Đã thêm thành viên",
+                    project.getProjectId(), userPrincipal.getFullName(), null);
 
             return ProjectMemberResponse.builder()
                     .userId(saved.getMemberId())
@@ -378,7 +380,11 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional
-    @CacheEvict(value = {"projectDetail"},key = "#projectId")
+    @Caching(evict = {
+            @CacheEvict(value = {"projectDetail"}, key = "#projectId"),
+            @CacheEvict(value = "roleICurrentProject", key = "#projectId+':'+" +
+                    "#memberId")
+    })
     public void deleteMember(String memberId, String projectId) {
         ProjectMember projectMember = projectMemberRepository
                 .findById(new ProjectMemberID(projectId, memberId))
@@ -396,9 +402,9 @@ public class ProjectServiceImpl implements ProjectService {
                         () -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Không tìm thấy user")
                 );
 
-        publishProjectActivity(projectId,ActionType.DELETE_MEMBER,
-                "Đã xóa: "+userPrincipal.getFullName(),
-                memberId,userPrincipal.getFullName(),null);
+        publishProjectActivity(projectId, ActionType.DELETE_MEMBER,
+                "Đã xóa thành viên",
+                memberId, userPrincipal.getFullName(), null);
     }
 
     @Override
@@ -415,6 +421,8 @@ public class ProjectServiceImpl implements ProjectService {
                 .build();
         Label saved = labelRepository.save(label);
 
+        publishProjectActivity(projectId, ActionType.ADD_LABEL, "Đã tạo nhãn",
+                saved.getLabelId(), saved.getName(), null);
         return LabelResponse.builder()
                 .labelId(saved.getLabelId())
                 .name(saved.getName())
@@ -434,8 +442,23 @@ public class ProjectServiceImpl implements ProjectService {
                                 "Nhãn không tồn tại trong dự án or đã bị xóa")
                 );
 
-        label.setName(request.getName());
-        label.setColor(request.getColor());
+        List<Map<String, Object>> changes = new ArrayList<>();
+
+        if (!label.getName().equals(request.getName())) {
+            changes.add(createChangeLog("Tên", label.getName(), request.getName()));
+            label.setName(request.getName());
+        }
+        if (!label.getColor().equals(request.getColor())) {
+            changes.add(createChangeLog("Color", label.getColor(), request.getColor()));
+            label.setColor(request.getColor());
+        }
+        if (!changes.isEmpty()) {
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put("changes", changes);
+            publishProjectActivity(projectId, ActionType.UPDATE_LABEL,
+                    "Đã cập nhập nhãn", label.getLabelId(), label.getName(), metadata);
+        }
+
         return LabelResponse.builder()
                 .labelId(labelId)
                 .name(label.getName())
@@ -448,11 +471,14 @@ public class ProjectServiceImpl implements ProjectService {
     @Transactional
     @CacheEvict(value = "projectDetail", key = "#projectId")
     public void deleteLabel(String projectId, String labelId) {
-        try {
-            labelRepository.deleteByProjectIdAndLabelId(projectId, labelId);
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
-        }
+        Label label = labelRepository.findByProjectIdAndLabelId(projectId, labelId)
+                .orElseThrow(
+                        () -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                                "Nhãn không tồn tại trong dự án or đã bị xóa")
+                );
+        labelRepository.delete(label);
+        publishProjectActivity(projectId, ActionType.DELETE_LABEL, "Đã xóa",
+                label.getLabelId(), label.getName(), null);
     }
 
     @Override
@@ -470,6 +496,8 @@ public class ProjectServiceImpl implements ProjectService {
                 .project(project)
                 .build();
         BoardColumn savedBoardColumn = boardColumnRepository.save(boardColumn);
+        publishProjectActivity(projectId, ActionType.ADD_BOARD_COLUMN, "Đã tạo cột",
+                savedBoardColumn.getBoardColumnId(), savedBoardColumn.getName(), null);
         return BoardColumnResponse.builder()
                 .name(savedBoardColumn.getName())
                 .sortOrder(savedBoardColumn.getSortOrder())
@@ -493,9 +521,19 @@ public class ProjectServiceImpl implements ProjectService {
                                 "Cột không tồn tại")
                 );
         if (name != null && !name.isBlank()) {
+            List<Map<String, Object>> changes = new ArrayList<>();
+            changes.add(createChangeLog("Tên", boardColumn.getName(), name));
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put("changes", changes);
+
+            publishProjectActivity(projectId, ActionType.UPDATE_BOARD_COLUMN,
+                    "Đã cập nhập cột", boardColumn.getBoardColumnId(),
+                    boardColumn.getName(), metadata);
             boardColumn.setName(name);
         }
         if (sortOrder != null && !sortOrder.isNaN()) {
+            publishProjectActivity(projectId, ActionType.MOVE_BOARD_COLUMN, "Đã di chuyển cột",
+                    boardColumn.getBoardColumnId(), boardColumn.getName(), null);
             boardColumn.setSortOrder(sortOrder);
         }
         return BoardColumnResponse.builder()
@@ -511,11 +549,15 @@ public class ProjectServiceImpl implements ProjectService {
     @Transactional
     @CacheEvict(value = "projectDetail", key = "#projectId")
     public void deleteBoardColumn(String projectId, String columnId) {
-        try {
-            boardColumnRepository.deleteByProjectIdAndBoardColumnId(projectId, columnId);
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
-        }
+        BoardColumn boardColumn = boardColumnRepository.
+                findByProjectIdAndBoardColumnId(projectId, columnId)
+                .orElseThrow(
+                        () -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                                "Cột không tồn tại")
+                );
+        boardColumnRepository.delete(boardColumn);
+        publishProjectActivity(projectId,ActionType.DELETE_BOARD_COLUMN,"Đã xóa cột",
+                boardColumn.getBoardColumnId(), boardColumn.getName(), null);
     }
 
     @Override
@@ -530,6 +572,8 @@ public class ProjectServiceImpl implements ProjectService {
                 );
         boardColumn.setStatus(Status.ARCHIVED);
         boardColumn.setSortOrder(null);
+        publishProjectActivity(projectId,ActionType.ARCHIVE_BOARD_COLUMN,"Đã lưu trữ cột",
+                boardColumn.getBoardColumnId(), boardColumn.getName(), null);
         return BoardColumnResponse.builder()
                 .name(boardColumn.getName())
                 .sortOrder(boardColumn.getSortOrder())
@@ -550,15 +594,17 @@ public class ProjectServiceImpl implements ProjectService {
                         () -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                                 "Cột không tồn tại")
                 );
-        if(sortOrder==null||sortOrder.isNaN()) {
+        if (sortOrder == null || sortOrder.isNaN()) {
             boardColumn.setStatus(Status.ACTIVE);
             Double maxSortOrder = boardColumnRepository
                     .getMaxSortOrderFromProject(projectId).orElse(0.0);
             boardColumn.setSortOrder(Math.ceil(maxSortOrder) + 1);
-        }else {
+        } else {
             boardColumn.setStatus(Status.ACTIVE);
             boardColumn.setSortOrder(sortOrder);
         }
+        publishProjectActivity(projectId,ActionType.RESTORE_BOARD_COLUMN,"Đã khôi phục cột",
+                boardColumn.getBoardColumnId(), boardColumn.getName(), null);
         return BoardColumnResponse.builder()
                 .name(boardColumn.getName())
                 .sortOrder(boardColumn.getSortOrder())
@@ -569,7 +615,7 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
 
-    private UserPrincipal getCurrentUser() {
+    public UserPrincipal getCurrentUser() {
         return (UserPrincipal) SecurityContextHolder
                 .getContext()
                 .getAuthentication()
@@ -597,5 +643,13 @@ public class ProjectServiceImpl implements ProjectService {
                 .build();
 
         activityPublisher.publish(event);
+    }
+
+    private Map<String, Object> createChangeLog(String field, Object oldValue, Object newValue) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("field", field);
+        map.put("old", oldValue);
+        map.put("new", newValue);
+        return map;
     }
 }

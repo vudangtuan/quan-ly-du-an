@@ -1,6 +1,7 @@
 package com.tuanhust.activityservice.service;
 
 import com.tuanhust.activityservice.config.RabbitMQConfig;
+import com.tuanhust.activityservice.controller.ActivityStreamController;
 import com.tuanhust.activityservice.dto.ActivityEvent;
 import com.tuanhust.activityservice.entity.Activity;
 import com.tuanhust.activityservice.repository.ActivityRepository;
@@ -16,6 +17,7 @@ import java.time.Instant;
 @Slf4j
 public class ActivityConsumer {
     private final ActivityRepository activityRepository;
+    private final ActivityStreamController streamController;
 
     @RabbitListener(queues = RabbitMQConfig.ACTIVITY_QUEUE)
     public void handleActivityEvent(ActivityEvent event) {
@@ -33,7 +35,8 @@ public class ActivityConsumer {
                     .targetName(event.getTargetName())
                     .createdAt(Instant.now())
                     .build();
-            activityRepository.save(activity);
+           Activity saved = activityRepository.save(activity);
+           streamController.broadcastActivitiesByProject(saved);
         }catch (Exception e){
             log.error(e.getMessage(),e);
         }
