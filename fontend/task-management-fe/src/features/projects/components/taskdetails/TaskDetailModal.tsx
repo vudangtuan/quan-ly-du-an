@@ -16,6 +16,7 @@ import {TaskDescription} from "./TaskDescription";
 import {TaskMetaInfo} from "./TaskMetaInfo";
 import {TaskChecklist} from "./TaskChecklist";
 import {TaskComments} from "./TaskComments";
+import {TaskActivity} from "@features/projects/components/taskdetails/TaskActivity";
 
 interface TaskDetailModalProps {
     taskId: string;
@@ -173,6 +174,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({taskId, isOpen,
                                     taskId={taskId}
                                     comments={task.comments}
                                 />
+                                <TaskActivity taskId={taskId}/>
                             </div>
                         </div>
                     )}

@@ -92,7 +92,7 @@ export const TaskComments: React.FC<TaskCommentsProps> = ({taskId, comments}) =>
     };
 
     return (
-        <div className="space-y-3 min-h-100">
+        <div className="space-y-3">
             <div className="flex items-center gap-2">
                 <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                     <MessageSquare className="h-4 w-4"/>

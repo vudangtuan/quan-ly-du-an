@@ -5,6 +5,7 @@ import {Activity} from "@features/projects/types/project.types";
 import {ActivityService} from "@features/projects/services/ActivityService";
 import toast from "react-hot-toast";
 import {useInfiniteQuery, useQueryClient} from "@tanstack/react-query";
+import {QUERY_STALE_TIME} from "@config/query.config";
 
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -12,6 +13,7 @@ export const useActivityStream = (projectId: string) => {
     const [activities, setActivities] = useState<Activity[]>([]);
     const [isConnected, setIsConnected] = useState(false);
     const queryClient = useQueryClient();
+    const accessToken = useAuthStore((state) => state.accessToken);
 
     const {data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage} = useInfiniteQuery({
         queryKey: ["activities", projectId],
@@ -24,7 +26,8 @@ export const useActivityStream = (projectId: string) => {
         },
         enabled: !!projectId,
         initialPageParam: 0,
-        refetchOnWindowFocus: false
+        refetchOnWindowFocus: false,
+        staleTime: Infinity,
     });
     useEffect(() => {
         if (data) {
@@ -33,9 +36,6 @@ export const useActivityStream = (projectId: string) => {
     }, [data]);
     useEffect(() => {
         if (!projectId) return;
-
-        const accessToken = useAuthStore.getState().accessToken;
-
         if (!accessToken) return;
 
         const sseUrl = `/api/activity/stream/project/${projectId}`;
@@ -71,8 +71,14 @@ export const useActivityStream = (projectId: string) => {
             if (activity.taskId) {
                 queryClient.invalidateQueries({queryKey: ['task', activity.taskId]});
                 queryClient.invalidateQueries({queryKey: ['tasks', projectId]});
+                queryClient.invalidateQueries({queryKey: ['task-activity', activity.taskId]});
             }
         });
+
+        eventSource.onclose = ()=>{
+            console.log("Closed event source");
+        }
+
 
         eventSource.onerror = (err) => {
             console.error('SSE Error:', err);
@@ -83,8 +89,12 @@ export const useActivityStream = (projectId: string) => {
                 eventSource.close();
             }
         };
-        return () => eventSource.close();
-    }, [projectId]);
+        return () => {
+            eventSource.close();
+            setIsConnected(false);
+            console.log("Closed event source");
+        };
+    }, [accessToken, projectId]);
     return {
         activities, isConnected, isLoading
         , isFetchingNextPage, hasNextPage, fetchNextPage

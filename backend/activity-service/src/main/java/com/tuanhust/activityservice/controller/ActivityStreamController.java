@@ -3,6 +3,7 @@ package com.tuanhust.activityservice.controller;
 import com.tuanhust.activityservice.entity.Activity;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -73,6 +74,20 @@ public class ActivityStreamController {
             }catch (Exception e){
                 return true;
             }
+        });
+    }
+
+    @Scheduled(fixedRate = 60000)
+    public void sendHeartbeat() {
+        projectEmitters.values().forEach(emitters -> {
+            emitters.removeIf(emitter -> {
+                try {
+                    emitter.send(SseEmitter.event().comment("heartbeat"));
+                    return false;
+                } catch (IOException e) {
+                    return true;
+                }
+            });
         });
     }
 
