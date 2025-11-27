@@ -5,7 +5,7 @@ import {ChevronDown, Calendar as CalendarIcon, User, Filter, X, Search} from 'lu
 import {TaskResponse, TaskPriority} from '@features/projects/types/task.types';
 import {formatDate, isOverdue} from '@features/utils/date.utils';
 import {Avatar} from '@components/Avatar';
-import {TaskDetailModal} from '../kanban/TaskDetailModal';
+import {TaskDetailModal} from '../taskdetails/TaskDetailModal';
 import {ProjectMemberResponse} from '../types/project.types';
 import {TaskContextMenu} from "@features/projects/components/TaskContextMenu";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";

@@ -7,7 +7,7 @@ import {BoardColumnResponse, ProjectMemberResponse} from "@features/projects/typ
 import {formatDate, isOverdue} from "@features/utils/date.utils";
 import {Users, Layers} from "lucide-react";
 import "./projectGantt.css"
-import {TaskDetailModal} from "@features/projects/components/kanban/TaskDetailModal";
+import {TaskDetailModal} from "@features/projects/components/taskdetails/TaskDetailModal";
 
 
 const columns: GridColumn[] = [

@@ -5,7 +5,7 @@ import {useOutletContext} from "react-router-dom";
 import {ProjectDetailContext} from "@features/projects/pages/ProjectDetailPage";
 import {Calendar, CheckCircle2, Circle, Eye} from "lucide-react";
 import {formatDate} from "@features/utils/date.utils";
-import {TaskDetailModal} from "@features/projects/components/kanban/TaskDetailModal";
+import {TaskDetailModal} from "@features/projects/components/taskdetails/TaskDetailModal";
 import {TaskContextMenu} from "@features/projects/components/TaskContextMenu";
 
 export const ProjectTimeline: React.FC = () => {

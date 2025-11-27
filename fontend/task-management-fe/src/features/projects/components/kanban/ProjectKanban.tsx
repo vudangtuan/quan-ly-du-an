@@ -11,7 +11,7 @@ import {TaskService} from "@features/projects/services/TaskService";
 import {TaskResponse} from "@features/projects/types/task.types";
 import {ProjectDetailContext} from "@features/projects/pages/ProjectDetailPage";
 import {arrayMoveImmutable as arrayMove} from 'array-move';
-import {TaskDetailModal} from "@features/projects/components/kanban/TaskDetailModal";
+import {TaskDetailModal} from "@features/projects/components/taskdetails/TaskDetailModal";
 
 
 export const ProjectKanban: React.FC = () => {

@@ -6,7 +6,7 @@ import {useConfirm} from "@components/ConfirmDialog";
 import toast from "react-hot-toast";
 import {TaskService} from "@features/projects/services/TaskService";
 import {useMutation, useQueryClient} from "@tanstack/react-query";
-import {TaskDetailModal} from "@features/projects/components/kanban/TaskDetailModal";
+import {TaskDetailModal} from "@features/projects/components/taskdetails/TaskDetailModal";
 
 interface TaskContextMenuProps {
     task: TaskResponse;

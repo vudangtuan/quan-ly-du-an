@@ -28,4 +28,14 @@ public class ActivityController {
         return ResponseEntity.ok(ApiResponse.success(
                 activityService.getActivitiesByProject(projectId,pageable)));
     }
+
+    @GetMapping("/task/{taskId}")
+    public ResponseEntity<ApiResponse<PaginatedResponse<Activity>>> getActivitiesByTask(
+            @PathVariable String taskId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size){
+        Pageable pageable = PageRequest.of(page, size);
+        return ResponseEntity.ok(ApiResponse.success(
+                activityService.getActivitiesByTask(taskId,pageable)));
+    }
 }

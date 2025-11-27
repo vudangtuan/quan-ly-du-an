@@ -7,4 +7,6 @@ import org.springframework.data.domain.Pageable;
 
 public interface ActivityService {
     PaginatedResponse<Activity> getActivitiesByProject(String projectId, Pageable pageable);
+
+    PaginatedResponse<Activity> getActivitiesByTask(String taskId, Pageable pageable);
 }
