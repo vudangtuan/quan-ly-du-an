@@ -4,6 +4,8 @@ import com.tuanhust.coreservice.client.AuthServiceClient;
 import com.tuanhust.coreservice.config.UserPrincipal;
 import com.tuanhust.coreservice.dto.ActionType;
 import com.tuanhust.coreservice.dto.ActivityEvent;
+import com.tuanhust.coreservice.dto.InvitationData;
+import com.tuanhust.coreservice.dto.NotificationEvent;
 import com.tuanhust.coreservice.entity.BoardColumn;
 import com.tuanhust.coreservice.entity.Label;
 import com.tuanhust.coreservice.entity.Project;
@@ -12,6 +14,7 @@ import com.tuanhust.coreservice.entity.enums.Role;
 import com.tuanhust.coreservice.entity.enums.Status;
 import com.tuanhust.coreservice.entity.ids.ProjectMemberID;
 import com.tuanhust.coreservice.publisher.ActivityPublisher;
+import com.tuanhust.coreservice.publisher.NotificationPublisher;
 import com.tuanhust.coreservice.repository.BoardColumnRepository;
 import com.tuanhust.coreservice.repository.LabelRepository;
 import com.tuanhust.coreservice.repository.ProjectMemberRepository;
@@ -29,6 +32,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -37,6 +41,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
@@ -49,6 +54,8 @@ public class ProjectServiceImpl implements ProjectService {
     private final BoardColumnRepository boardColumnRepository;
     private final AuthServiceClient authClient;
     private final ActivityPublisher activityPublisher;
+    private final NotificationPublisher notificationPublisher;
+    private final RedisTemplate<String,Object> redisTemplate;
 
 
     @Override
@@ -206,7 +213,13 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional
-    @CacheEvict(value = "projectDetail", key = "#projectId")
+    @Caching(
+            evict = {
+                    @CacheEvict(value = "projectDetail", key = "#projectId"),
+                    @CacheEvict(value = "roleInCurrentProject", key = "#projectId+':'+" +
+                            "#root.target.getCurrentUser().userId")
+            }
+    )
     public void deleteProject(String projectId) {
         Project project = projectRepository.findById(projectId).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dự án không tồn tại")
@@ -285,7 +298,7 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "roleICurrentProject", key = "#id+':'+" +
+    @Cacheable(value = "roleInCurrentProject", key = "#id+':'+" +
             "#root.target.getCurrentUser().userId")
     @Override
     public Role getCurrentRoleInProject(String id) {
@@ -301,7 +314,7 @@ public class ProjectServiceImpl implements ProjectService {
     @Transactional
     @Caching(evict = {
             @CacheEvict(value = "projectDetail", key = "#projectId"),
-            @CacheEvict(value = "roleICurrentProject", key = "#projectId+':'+" +
+            @CacheEvict(value = "roleInCurrentProject", key = "#projectId+':'+" +
                     "#userId")
     })
     public void updateMemberRole(String projectId, String userId, Role role) {
@@ -335,54 +348,110 @@ public class ProjectServiceImpl implements ProjectService {
 
 
     @Override
-    @Transactional
-    @CacheEvict(value = "projectDetail", key = "#inviteMemberRequest.projectId")
-    public ProjectMemberResponse inviteMember(InviteMemberRequest inviteMemberRequest) {
-        Role role = inviteMemberRequest.getRole();
-        if (role == Role.EDITOR || role == Role.VIEWER || role == Role.COMMENTER) {
-            Project project = projectRepository.findById(inviteMemberRequest.getProjectId()).orElseThrow(
-                    () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dự án không tồn tại")
-            );
-            ProjectMemberID id = new ProjectMemberID(
-                    inviteMemberRequest.getProjectId(), inviteMemberRequest.getMemberId()
-            );
-            if (projectMemberRepository.existsById(id)) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT,
-                        "Thành viên này đã có trong dự án");
-            }
-            ProjectMember projectMember = ProjectMember.builder()
-                    .memberId(inviteMemberRequest.getMemberId())
-                    .project(project)
-                    .role(inviteMemberRequest.getRole())
-                    .build();
-            ProjectMember saved = projectMemberRepository.save(projectMember);
-            UserPrincipal userPrincipal = authClient.getUsers(List.of(saved.getMemberId()))
-                    .stream().findFirst().orElseThrow(
-                            () -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Không tìm thấy user")
-                    );
+    public void sendInvitation(InviteMemberRequest request) {
+        Role role = request.getRole();
+        Project project = projectRepository.findById(request.getProjectId())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Dự án không tồn tại"));
 
-            publishProjectActivity(project.getProjectId(), ActionType.ADD_MEMBER,
-                    "Đã thêm thành viên",
-                    project.getProjectId(), userPrincipal.getFullName(), null);
-
-            return ProjectMemberResponse.builder()
-                    .userId(saved.getMemberId())
-                    .email(userPrincipal.getEmail())
-                    .fullName(userPrincipal.getFullName())
-                    .projectId(inviteMemberRequest.getProjectId())
-                    .joinAt(saved.getJoinedAt())
-                    .roleInProject(saved.getRole())
+        if (projectMemberRepository.existsById(new ProjectMemberID(request.getProjectId(), request.getMemberId()))) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT, "Thành viên này đã có trong dự án");
+        }
+        String pendingKey = "invitation_pending:" + request.getProjectId() + ":" + request.getMemberId();
+        if (redisTemplate.hasKey(pendingKey)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Đã gửi lời mời cho thành viên này rồi.");
+        }
+        if (role == Role.EDITOR || role == Role.VIEWER || role == Role.COMMENTER){
+            UserPrincipal currentUser = getCurrentUser();
+            UserPrincipal invitedUser = authClient.getUsers(List.of(request.getMemberId()))
+                    .stream().findFirst().orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.BAD_REQUEST, "User không tồn tại"));
+            String token = UUID.randomUUID().toString();
+            InvitationData invitation = InvitationData.builder()
+                    .projectId(request.getProjectId())
+                    .memberId(request.getMemberId())
+                    .role(request.getRole())
+                    .inviterId(currentUser.getUserId())
                     .build();
-        } else {
+            String redisKey = "invitation:" + token;
+
+            redisTemplate.opsForValue().set(redisKey, invitation, 7, TimeUnit.DAYS);
+            redisTemplate.opsForValue().set(pendingKey, token, 7, TimeUnit.DAYS);
+            String inviteLink = "http://localhost:5173/accept-invite?token=" + token;
+
+            Map<String, Object> emailProps = new HashMap<>();
+            emailProps.put("template", "email-invite");
+            emailProps.put("recipientName", invitedUser.getFullName());
+            emailProps.put("inviterName", currentUser.getFullName());
+            emailProps.put("projectName", project.getName());
+            emailProps.put("role", request.getRole().toString());
+            emailProps.put("expiryDays",7);
+            emailProps.put("inviteLink", inviteLink);
+
+            NotificationEvent emailEvent = NotificationEvent.builder()
+                    .channel("EMAIL")
+                    .recipient(invitedUser.getEmail())
+                    .subject("Lời mời tham gia dự án: " + project.getName())
+                    .content("Bạn nhận được lời mời tham gia dự án.")
+                    .properties(emailProps)
+                    .build();
+
+            notificationPublisher.publish(emailEvent);
+        }else {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "role không đúng");
         }
+
+    }
+
+    @Override
+    @Transactional
+    @CacheEvict(value = "projectDetail", key = "#result.projectId")
+    public ProjectMemberResponse acceptInvitation(String token) {
+        String tokenKey = "invitation:" + token;
+
+        InvitationData invitation = (InvitationData) redisTemplate.opsForValue().get(tokenKey);
+        if (invitation == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Lời mời không hợp lệ hoặc đã hết hạn");
+        }
+        String pendingKey = "invitation_pending:" + invitation.getProjectId() + ":" + invitation.getMemberId();
+        Project project = projectRepository.findById(invitation.getProjectId())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Dự án không tồn tại"));
+        ProjectMember projectMember = ProjectMember.builder()
+                .memberId(invitation.getMemberId())
+                .project(project)
+                .role(invitation.getRole())
+                .build();
+        ProjectMember saved = projectMemberRepository.save(projectMember);
+
+
+        UserPrincipal invitedUser = authClient.getUsers(
+                List.of(invitation.getInviterId())).getFirst();
+
+        publishProjectActivity(project.getProjectId(), ActionType.ADD_MEMBER,
+                "Đã tham gia dự án qua lời mời",
+                project.getProjectId(), invitedUser.getFullName(), null);
+
+        redisTemplate.delete(tokenKey);
+        redisTemplate.delete(pendingKey);
+
+        return ProjectMemberResponse.builder()
+                .projectId(project.getProjectId())
+                .userId(saved.getMemberId())
+                .email(invitedUser.getEmail())
+                .fullName(invitedUser.getFullName())
+                .roleInProject(saved.getRole())
+                .build();
     }
 
     @Override
     @Transactional
     @Caching(evict = {
             @CacheEvict(value = {"projectDetail"}, key = "#projectId"),
-            @CacheEvict(value = "roleICurrentProject", key = "#projectId+':'+" +
+            @CacheEvict(value = "roleInCurrentProject", key = "#projectId+':'+" +
                     "#memberId")
     })
     public void deleteMember(String memberId, String projectId) {
@@ -493,6 +562,7 @@ public class ProjectServiceImpl implements ProjectService {
         BoardColumn boardColumn = BoardColumn.builder()
                 .name(request.getName())
                 .sortOrder(Math.ceil(maxSortOrder) + 1)
+                .status(Status.ACTIVE)
                 .project(project)
                 .build();
         BoardColumn savedBoardColumn = boardColumnRepository.save(boardColumn);

@@ -69,37 +69,10 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({isOpen, onClose, 
 
     const inviteMemberMutation = useMutation({
         mutationFn: (data: InviteMemberRequest) => {
-            return ProjectService.inviteMember(data);
+            return ProjectService.sendInvitation(data);
         },
-        onSuccess: (data: ProjectMemberResponse) => {
-            if (queryCache.find({queryKey: ["projectDetails", projectId]})) {
-                queryClient.setQueryData(["projectDetails", projectId], (oldData: ProjectDetailResponse) => {
-                    return {
-                        ...oldData,
-                        members: [
-                            ...oldData.members, data
-                        ]
-                    }
-                });
-            }
-            if (queryCache.find({queryKey: ['projects', userId]})) {
-                queryClient.setQueryData(['projects', userId],
-                    (oldData: InfiniteData<PaginatedResponse<ProjectResponse>>) => {
-                        return {
-                            ...oldData,
-                            pages: oldData.pages.map((page: PaginatedResponse<ProjectResponse>) => ({
-                                ...page,
-                                content: page.content.map((p: ProjectResponse) =>
-                                    p.projectId === projectId
-                                        ? {...p, members: p.members + 1}
-                                        : p
-                                ),
-                            })),
-                        }
-                    });
-            }
-
-            toast.success('Thêm thành viên thành công!');
+        onSuccess: () => {
+            toast.success('Đã gửi lời mời');
             onClose();
             setSearchQuery("")
             setSelectedUserId("")

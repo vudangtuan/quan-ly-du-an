@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: notification-service
+  mail:
+    host: smtp-relay.brevo.com
+    port: 587
+    username: ${MAIL_SENDER_USERNAME}
+    password: ${MAIL_SENDER_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+    from-mail: no-reply@quanlynhiemvu.online
+
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:localhost}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME:guest}
+    password: ${SPRING_RABBITMQ_PASSWORD:guest}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka/}
+
+server:
+  port: 8003

@@ -13,6 +13,7 @@ import {ProjectList} from "@features/projects/components/list";
 import {ProjectGantt} from "@features/projects/components/gantt";
 import {MyTasksPage} from "@features/mytasks/MyTasksPage";
 import SettingsPage from "@features/settings/SettingsPage";
+import {AcceptInvitePage} from "@features/projects/pages/AcceptInvitePage";
 
 
 // Ví dụ: Tạo một trang NotFound tạm thời
@@ -43,9 +44,13 @@ export const routesConfig = [
                             {path: 'list', element: <ProjectList/>},
                             {path: 'gantt', element: <ProjectGantt/>},
                         ]
-                    }
+                    },
                 ],
             },
+            {
+                path: '/accept-invite',
+                element: <AcceptInvitePage />
+            }
         ],
     },
     {

@@ -48,9 +48,17 @@ export const ProjectService = {
     getDetailProject: async (projectId: string): Promise<ProjectDetailResponse> => {
         return await privateApi.get(`/project/${projectId}`);
     },
+
     //members
-    inviteMember: async (data: InviteMemberRequest): Promise<ProjectMemberResponse> => {
-        return await privateApi.post(`/project/${data.projectId}/members`, data);
+    sendInvitation: async (data: InviteMemberRequest): Promise<void> => {
+        return await privateApi.post(`/project/${data.projectId}/invitation/send`, data);
+    },
+    acceptInvitation: async (token: string): Promise<ProjectMemberResponse> => {
+        return await privateApi.post(`/project/invitation/accept`, {}, {
+            params: {
+                token: token
+            }
+        });
     },
     deleteMember: async (projectId: string, memberId: string): Promise<void> => {
         return await privateApi.delete(`/project/${projectId}/members/${memberId}`);

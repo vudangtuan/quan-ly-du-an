@@ -6,6 +6,7 @@ import {ActivityService} from "@features/projects/services/ActivityService";
 import toast from "react-hot-toast";
 import {useInfiniteQuery, useQueryClient} from "@tanstack/react-query";
 import {QUERY_STALE_TIME} from "@config/query.config";
+import {useNavigate} from "react-router-dom";
 
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -14,6 +15,7 @@ export const useActivityStream = (projectId: string) => {
     const [isConnected, setIsConnected] = useState(false);
     const queryClient = useQueryClient();
     const accessToken = useAuthStore((state) => state.accessToken);
+    const navigate = useNavigate();
 
     const {data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage} = useInfiniteQuery({
         queryKey: ["activities", projectId],

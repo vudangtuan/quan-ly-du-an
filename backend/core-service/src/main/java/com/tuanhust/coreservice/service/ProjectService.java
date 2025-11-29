@@ -15,7 +15,9 @@ public interface ProjectService {
 
     PaginatedResponse<ProjectResponse> getProjectsForUserId(Pageable pageable, String userId);
 
-    ProjectMemberResponse inviteMember(InviteMemberRequest inviteMemberRequest);
+    void sendInvitation(InviteMemberRequest request);
+
+    ProjectMemberResponse acceptInvitation(String token);
 
     void deleteMember(String memberId, String projectId);
 

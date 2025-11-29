@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lời mời tham gia dự án</title>
+    <style>
+        /* Reset CSS cơ bản */
+        body { margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f5f7; color: #172b4d; -webkit-font-smoothing: antialiased; }
+        table { border-collapse: collapse; width: 100%; }
+
+        /* Container chính */
+        .wrapper { width: 100%; background-color: #f4f5f7; padding: 40px 0; }
+        .container { display: block; max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+
+
+        /* Nội dung */
+        .content { padding: 32px 40px; }
+        .greeting { font-size: 20px; margin-bottom: 16px; font-weight: 600; color: #091e42; }
+        .text { font-size: 16px; line-height: 24px; color: #42526e; margin-bottom: 24px; }
+
+        /* Box thông tin dự án */
+        .project-card { background-color: #ebecf0; border-radius: 6px; padding: 20px; margin-bottom: 24px; border-left: 4px solid #2563EB; }
+        .project-card p { margin: 8px 0; font-size: 15px; color: #172b4d; }
+        .label { font-weight: 600; color: #5e6c84; width: 80px; display: inline-block; }
+
+        /* Nút bấm CTA */
+        .btn-container { text-align: center; margin: 32px 0; }
+        .btn { background-color: #2563EB; color: #ffffff !important; font-size: 16px; font-weight: 600; padding: 14px 32px; border-radius: 4px; text-decoration: none; display: inline-block; transition: background-color 0.2s; }
+        .btn:hover { background-color: #0052cc; }
+
+        /* Link dự phòng */
+        .fallback-link { font-size: 12px; color: #6b778c; margin-top: 24px; word-break: break-all; line-height: 1.5; }
+        .fallback-link a { color: #2563EB; text-decoration: none; }
+
+
+        /* Responsive */
+        @media only screen and (max-width: 600px) {
+            .content { padding: 24px 20px; }
+            .wrapper { padding: 20px 0; }
+        }
+    </style>
+</head>
+<body>
+<div class="wrapper">
+    <table class="container" role="presentation">
+        <tr>
+            <td class="content">
+                <div class="greeting">Xin chào <span th:text="${recipientName}">Người dùng</span>,</div>
+
+                <div class="text">
+                    <strong th:text="${inviterName}">Admin</strong> vừa mời bạn tham gia vào một dự án trên hệ thống quản lý công việc TaskFlow.
+                </div>
+
+                <div class="project-card">
+                    <p>
+                        <span class="label">Dự án:</span>
+                        <strong th:text="${projectName}">Tên Dự Án</strong>
+                    </p>
+                    <p>
+                        <span class="label">Vai trò:</span>
+                        <span style="background: #dfe1e6; padding: 2px 6px; border-radius: 3px; font-size: 12px; font-weight: bold;" th:text="${role}">MEMBER</span>
+                    </p>
+                </div>
+
+                <div class="text">
+                    Hãy chấp nhận lời mời để bắt đầu theo dõi tiến độ và cộng tác cùng nhóm ngay hôm nay.
+                </div>
+
+                <div class="btn-container">
+                    <a th:href="${inviteLink}" class="btn" target="_blank">Chấp nhận lời mời</a>
+                    <p style="font-size: 13px; color: #de350b; margin-top: 12px; font-style: italic;">
+                        ⚠️ Link này có hiệu lực trong <span th:text="${expiryDays}">7</span> ngày.
+                    </p>
+                </div>
+
+                <div class="fallback-link">
+                    Nếu nút bên trên không hoạt động, bạn có thể copy đường dẫn sau vào trình duyệt:<br>
+                    <a th:href="${inviteLink}" th:text="${inviteLink}">https://taskflow.com/invite/...</a>
+                </div>
+            </td>
+        </tr>
+    </table>
+</div>
+</body>
+</html>

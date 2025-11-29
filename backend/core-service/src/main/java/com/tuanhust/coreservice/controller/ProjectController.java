@@ -103,12 +103,19 @@ public class ProjectController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-    @PostMapping("/{projectId}/members")
+    @PostMapping("/{projectId}/invitation/send")
     @ProjectRoles(roles = {"OWNER"})
-    public ResponseEntity<ApiResponse<ProjectMemberResponse>> inviteMember(
+    public ResponseEntity<ApiResponse<Void>> sendInvite(
             @Valid @RequestBody InviteMemberRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success(projectService.inviteMember(request)));
+        projectService.sendInvitation(request);
+        return ResponseEntity
+                .ok(ApiResponse.success("successfully",null));
+    }
+
+    @PostMapping("/invitation/accept")
+    public ResponseEntity<ApiResponse<ProjectMemberResponse>> acceptInvite(
+            @RequestParam String token) {
+        return ResponseEntity.ok(ApiResponse.success(projectService.acceptInvitation(token)));
     }
 
     @PatchMapping("/{projectId}/members/{userId}")
