@@ -39,7 +39,7 @@ const SettingsPage: React.FC = () => {
     const logoutMutation = useMutation({
         mutationFn: () => AuthService.logout(),
         onSuccess: () => {
-            navigate('/login');
+            window.location.href="/login";
             logoutAction();
         },
         onError: (e) => {

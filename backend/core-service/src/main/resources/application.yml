@@ -58,3 +58,6 @@ logging:
     org.springframework.web: debug
     org.hibernate.stat: DEBUG
     org.hibernate.jdbc.batch: DEBUG
+
+app:
+  frontend-url: ${FRONTEND_URL:http://localhost:5173}

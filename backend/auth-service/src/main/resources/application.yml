@@ -39,8 +39,8 @@ server:
 jwt:
   private-key-path: classpath:keys/private_key.pem
   public-key-path: classpath:keys/public_key.pem
-  access-token-expiration: 900000       # 15 minutes
-  time-to-live: 604800000 # 7 days
+  access-token-expiration: ${JWT_ACCESS_EXPIRATION:900000}
+  time-to-live: ${JWT_TTL:604800000}
 
 internal:
   secret-key: ${INTERNAL_SECRET_KEY:dHXhuqVuMjAyMTQxMzM=}
@@ -56,7 +56,7 @@ logging:
     org.springframework.security: debug
 
 cookie:
-  domain: localhost
-  secure: false
-  same-site: Lax
-  time-to-live: 604800 #7 days
+  domain: ${COOKIE_DOMAIN:localhost}
+  secure: ${COOKIE_SECURE:false}
+  same-site: ${COOKIE_SAME_SITE:Lax}
+  time-to-live: ${JWT_TTL:604800000}

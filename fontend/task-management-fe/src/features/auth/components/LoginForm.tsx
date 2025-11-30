@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import {Link, useLocation, useNavigate} from 'react-router-dom';
 import { Eye, EyeOff, LogIn } from 'lucide-react';
 import { AuthService } from '../services/authService';
 import { useAuthStore } from '@store/slices/authSlice';
@@ -13,9 +13,8 @@ export const LoginForm: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const loginAction = useAuthStore((state) => state.login);
-    const navigate = useNavigate();
 
+    const loginAction = useAuthStore((state) => state.login);
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setIsLoading(true);
@@ -24,7 +23,6 @@ export const LoginForm: React.FC = () => {
         try {
             const response: AuthResponse = await AuthService.login({ email, password });
             loginAction(response);
-            navigate('/');
         } catch (err: any) {
             if (err.response?.data?.message) {
                 setError(err.response.data.message); // Luôn luôn lấy .message
@@ -43,8 +41,6 @@ export const LoginForm: React.FC = () => {
                 const response = await AuthService.loginWithGoogle(credentialResponse.credential);
 
                 loginAction(response);
-
-                navigate('/');
             } catch (err: any) {
                 console.error("Google Login Error:", err);
                 setError(err.response?.data?.message || "Đăng nhập Google thất bại");

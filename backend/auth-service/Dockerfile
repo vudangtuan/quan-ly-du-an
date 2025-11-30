@@ -1,4 +1,4 @@
-FROM openjdk:25-ea-jdk-oraclelinux9 AS build
+FROM eclipse-temurin:25-jdk-alpine AS build
 WORKDIR /app
 
 COPY .mvn/ .mvn
@@ -14,7 +14,7 @@ COPY src ./src
 RUN ./mvnw clean package -DskipTests
 
 #Chạy ứng dụng
-FROM openjdk:25-ea-jdk-oraclelinux9
+FROM eclipse-temurin:25-jdk-alpine
 WORKDIR /app
 
 # Copy file .jar từ bước build

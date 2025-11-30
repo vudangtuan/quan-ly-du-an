@@ -27,6 +27,7 @@ import com.tuanhust.coreservice.response.*;
 import com.tuanhust.coreservice.service.ProjectService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
@@ -55,7 +56,10 @@ public class ProjectServiceImpl implements ProjectService {
     private final AuthServiceClient authClient;
     private final ActivityPublisher activityPublisher;
     private final NotificationPublisher notificationPublisher;
-    private final RedisTemplate<String,Object> redisTemplate;
+    private final RedisTemplate<String, Object> redisTemplate;
+
+    @Value("${app.frontend-url}")
+    private String frontendUrl;
 
 
     @Override
@@ -363,7 +367,7 @@ public class ProjectServiceImpl implements ProjectService {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Đã gửi lời mời cho thành viên này rồi.");
         }
-        if (role == Role.EDITOR || role == Role.VIEWER || role == Role.COMMENTER){
+        if (role == Role.EDITOR || role == Role.VIEWER || role == Role.COMMENTER) {
             UserPrincipal currentUser = getCurrentUser();
             UserPrincipal invitedUser = authClient.getUsers(List.of(request.getMemberId()))
                     .stream().findFirst().orElseThrow(() -> new ResponseStatusException(
@@ -377,9 +381,7 @@ public class ProjectServiceImpl implements ProjectService {
                     .build();
             String redisKey = "invitation:" + token;
 
-            redisTemplate.opsForValue().set(redisKey, invitation, 7, TimeUnit.DAYS);
-            redisTemplate.opsForValue().set(pendingKey, token, 7, TimeUnit.DAYS);
-            String inviteLink = "http://localhost:5173/accept-invite?token=" + token;
+            String inviteLink = frontendUrl + "/accept-invite?token=" + token;
 
             Map<String, Object> emailProps = new HashMap<>();
             emailProps.put("template", "email-invite");
@@ -387,7 +389,7 @@ public class ProjectServiceImpl implements ProjectService {
             emailProps.put("inviterName", currentUser.getFullName());
             emailProps.put("projectName", project.getName());
             emailProps.put("role", request.getRole().toString());
-            emailProps.put("expiryDays",7);
+            emailProps.put("expiryDays", 7);
             emailProps.put("inviteLink", inviteLink);
 
             NotificationEvent emailEvent = NotificationEvent.builder()
@@ -399,7 +401,10 @@ public class ProjectServiceImpl implements ProjectService {
                     .build();
 
             notificationPublisher.publish(emailEvent);
-        }else {
+
+            redisTemplate.opsForValue().set(redisKey, invitation, 7, TimeUnit.DAYS);
+            redisTemplate.opsForValue().set(pendingKey, token, 7, TimeUnit.DAYS);
+        } else {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "role không đúng");
         }
 
@@ -415,6 +420,11 @@ public class ProjectServiceImpl implements ProjectService {
         if (invitation == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Lời mời không hợp lệ hoặc đã hết hạn");
+        }
+        if (!Objects.equals(invitation.getMemberId(), getCurrentUser().getUserId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Link mời này không dành cho tài khoản của bạn." +
+                            "   Vui lòng đăng nhập đúng tài khoản được mời.");
         }
         String pendingKey = "invitation_pending:" + invitation.getProjectId() + ":" + invitation.getMemberId();
         Project project = projectRepository.findById(invitation.getProjectId())
@@ -626,7 +636,7 @@ public class ProjectServiceImpl implements ProjectService {
                                 "Cột không tồn tại")
                 );
         boardColumnRepository.delete(boardColumn);
-        publishProjectActivity(projectId,ActionType.DELETE_BOARD_COLUMN,"Đã xóa cột",
+        publishProjectActivity(projectId, ActionType.DELETE_BOARD_COLUMN, "Đã xóa cột",
                 boardColumn.getBoardColumnId(), boardColumn.getName(), null);
     }
 
@@ -642,7 +652,7 @@ public class ProjectServiceImpl implements ProjectService {
                 );
         boardColumn.setStatus(Status.ARCHIVED);
         boardColumn.setSortOrder(null);
-        publishProjectActivity(projectId,ActionType.ARCHIVE_BOARD_COLUMN,"Đã lưu trữ cột",
+        publishProjectActivity(projectId, ActionType.ARCHIVE_BOARD_COLUMN, "Đã lưu trữ cột",
                 boardColumn.getBoardColumnId(), boardColumn.getName(), null);
         return BoardColumnResponse.builder()
                 .name(boardColumn.getName())
@@ -673,7 +683,7 @@ public class ProjectServiceImpl implements ProjectService {
             boardColumn.setStatus(Status.ACTIVE);
             boardColumn.setSortOrder(sortOrder);
         }
-        publishProjectActivity(projectId,ActionType.RESTORE_BOARD_COLUMN,"Đã khôi phục cột",
+        publishProjectActivity(projectId, ActionType.RESTORE_BOARD_COLUMN, "Đã khôi phục cột",
                 boardColumn.getBoardColumnId(), boardColumn.getName(), null);
         return BoardColumnResponse.builder()
                 .name(boardColumn.getName())

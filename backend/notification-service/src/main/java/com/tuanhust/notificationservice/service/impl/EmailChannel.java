@@ -23,6 +23,7 @@ public class EmailChannel implements NotificationChannel {
     private String fromEmail;
 
 
+
     @Override
     public boolean supports(String channelType) {
         return "EMAIL".equalsIgnoreCase(channelType) || "ALL".equalsIgnoreCase(channelType);
@@ -46,7 +47,7 @@ public class EmailChannel implements NotificationChannel {
 
             mailSender.send(message);
         } catch (Exception e) {
-            return;
+            throw new RuntimeException("Failed to send email", e);
         }
     }
 

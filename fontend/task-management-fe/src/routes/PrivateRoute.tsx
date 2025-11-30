@@ -1,21 +1,14 @@
 import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import {Navigate, Outlet, useLocation} from 'react-router-dom';
 import { useAuthStore } from '@/store/slices/authSlice';
 
-/**
- * Bảo vệ một tuyến đường.
- * Nếu người dùng đã đăng nhập, cho phép truy cập.
- * Nếu chưa, điều hướng về trang /login.
- */
+
 export const PrivateRoute: React.FC = () => {
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-
+    const location = useLocation();
     if (!isAuthenticated) {
-        // Lưu lại trang người dùng muốn vào để redirect sau khi login (tùy chọn)
-        // const location = useLocation();
-        // return <Navigate to="/login" state={{ from: location }} replace />;
-
-        return <Navigate to="/login" replace />;
+        const fullPath = encodeURIComponent(location.pathname + location.search);
+        return <Navigate to={`/login?redirect=${fullPath}`} replace />;
     }
 
     // Nếu đã đăng nhập, hiển thị component con (ví dụ: DashboardPage)

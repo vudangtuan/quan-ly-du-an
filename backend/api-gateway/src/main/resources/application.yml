@@ -31,3 +31,7 @@ eureka:
 
 server:
   port: 1004
+
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
