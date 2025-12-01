@@ -124,7 +124,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({taskId, isOpen,
                         </div>
                     ) : error ? (
                         <div className="flex-1 flex items-center justify-center p-6">
-                            <span className="font-semibold text-red-500">Có lỗi xảy ra</span>
+                            <span className="font-semibold text-red-500">Có lỗi xảy ra or đã bị xóa</span>
                         </div>
                     ) : (
                         <div className="overflow-auto flex-1">

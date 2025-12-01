@@ -15,10 +15,7 @@ import com.tuanhust.coreservice.entity.enums.Status;
 import com.tuanhust.coreservice.entity.ids.ProjectMemberID;
 import com.tuanhust.coreservice.publisher.ActivityPublisher;
 import com.tuanhust.coreservice.publisher.NotificationPublisher;
-import com.tuanhust.coreservice.repository.BoardColumnRepository;
-import com.tuanhust.coreservice.repository.LabelRepository;
-import com.tuanhust.coreservice.repository.ProjectMemberRepository;
-import com.tuanhust.coreservice.repository.ProjectRepository;
+import com.tuanhust.coreservice.repository.*;
 import com.tuanhust.coreservice.request.BoardColumnRequest;
 import com.tuanhust.coreservice.request.InviteMemberRequest;
 import com.tuanhust.coreservice.request.LabelRequest;
@@ -41,6 +38,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 
+import java.time.Instant;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -53,6 +53,7 @@ public class ProjectServiceImpl implements ProjectService {
     private final ProjectMemberRepository projectMemberRepository;
     private final LabelRepository labelRepository;
     private final BoardColumnRepository boardColumnRepository;
+    private final TaskAssigneeRepository taskAssigneeRepository;
     private final AuthServiceClient authClient;
     private final ActivityPublisher activityPublisher;
     private final NotificationPublisher notificationPublisher;
@@ -70,10 +71,11 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = Project.builder()
                 .name(projectRequest.getName())
                 .description(projectRequest.getDescription())
-                .dueAt(projectRequest.getDueAt())
+                .dueAt(normalizeToEndOfDay(projectRequest.getDueAt()))
                 .creatorId(currentUserId)
                 .status(Status.ACTIVE)
                 .build();
+
 
         Set<BoardColumn> boardColumns = projectRequest.getBoardColumns()
                 .stream().peek(bc -> bc.setProject(project))
@@ -174,9 +176,10 @@ public class ProjectServiceImpl implements ProjectService {
         }
 
         if (!Objects.equals(project.getDueAt(), request.getDueAt())) {
-            changes.add(createChangeLog("Hạn chót", project.getDueAt(), request.getDueAt()));
+            changes.add(createChangeLog("Hạn chót", project.getDueAt(),
+                    normalizeToEndOfDay(request.getDueAt())));
 
-            project.setDueAt(request.getDueAt());
+            project.setDueAt(normalizeToEndOfDay(request.getDueAt()));
         }
 
         if (!changes.isEmpty()) {
@@ -228,7 +231,7 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = projectRepository.findById(projectId).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dự án không tồn tại")
         );
-        projectRepository.delete(project);
+        projectRepository.removeProject(project.getProjectId());
         publishProjectActivity(projectId, ActionType.DELETE_PROJECT, "Đã xóa dự án",
                 projectId, project.getName(), null);
     }
@@ -460,7 +463,7 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     @Transactional
     @Caching(evict = {
-            @CacheEvict(value = {"projectDetail"}, key = "#projectId"),
+            @CacheEvict(value = "projectDetail", key = "#projectId"),
             @CacheEvict(value = "roleInCurrentProject", key = "#projectId+':'+" +
                     "#memberId")
     })
@@ -475,11 +478,13 @@ public class ProjectServiceImpl implements ProjectService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Không thể xóa quản lý");
         }
         projectMemberRepository.delete(projectMember);
+        taskAssigneeRepository.deleteAllByAssigneeIdAndTaskProjectId(memberId, projectId);
 
         UserPrincipal userPrincipal = authClient.getUsers(List.of(memberId))
                 .stream().findFirst().orElseThrow(
                         () -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Không tìm thấy user")
                 );
+
 
         publishProjectActivity(projectId, ActionType.DELETE_MEMBER,
                 "Đã xóa thành viên",
@@ -731,5 +736,12 @@ public class ProjectServiceImpl implements ProjectService {
         map.put("old", oldValue);
         map.put("new", newValue);
         return map;
+    }
+
+    private Instant normalizeToEndOfDay(Instant input) {
+        if (input == null) return null;
+        return input.atZone(ZoneId.systemDefault())
+                .with(LocalTime.of(23,59,59))
+                .toInstant();
     }
 }

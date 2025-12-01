@@ -25,6 +25,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -72,7 +74,7 @@ public class TaskServiceImpl implements TaskService {
                 .description(taskRequest.getDescription())
                 .status(Status.ACTIVE)
                 .completed(false)
-                .dueAt(taskRequest.getDueAt())
+                .dueAt(normalizeToEndOfDay(taskRequest.getDueAt()))
                 .priority(taskRequest.getPriority())
                 .creatorId(creator.getUserId())
                 .sortOrder(Math.ceil(maxSortOrder) + 1)
@@ -80,7 +82,10 @@ public class TaskServiceImpl implements TaskService {
 
         if (taskRequest.getAssigneeIds() != null && !taskRequest.getAssigneeIds().isEmpty()) {
             Set<TaskAssignee> assignees = taskRequest.getAssigneeIds().stream()
-                    .map(assigneeId -> TaskAssignee.builder().assigneeId(assigneeId).task(task).build())
+                    .map(assigneeId -> TaskAssignee.builder()
+                            .assigneeId(assigneeId)
+                            .task(task)
+                            .build())
                     .collect(Collectors.toSet());
             task.setAssignees(assignees);
         }
@@ -338,8 +343,8 @@ public class TaskServiceImpl implements TaskService {
                 changes.add(createChangeLog("Hạn chót", task.getDueAt(), null));
                 task.setDueAt(null);
             } else {
-                changes.add(createChangeLog("Hạn chót", task.getDueAt(), taskRequest.getDueAt()));
-                task.setDueAt(taskRequest.getDueAt());
+                changes.add(createChangeLog("Hạn chót", task.getDueAt(),normalizeToEndOfDay(taskRequest.getDueAt())));
+                task.setDueAt(normalizeToEndOfDay(taskRequest.getDueAt()));
             }
         }
         if (taskRequest.getPriority() != null && taskRequest.getPriority() != task.getPriority()) {
@@ -638,5 +643,11 @@ public class TaskServiceImpl implements TaskService {
         map.put("old", oldValue);
         map.put("new", newValue);
         return map;
+    }
+    private Instant normalizeToEndOfDay(Instant input) {
+        if (input == null) return null;
+        return input.atZone(ZoneId.systemDefault())
+                .with(LocalTime.of(23,59,59))
+                .toInstant();
     }
 }

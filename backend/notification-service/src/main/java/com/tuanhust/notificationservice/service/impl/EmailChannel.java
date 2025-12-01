@@ -4,6 +4,7 @@ import com.tuanhust.notificationservice.dto.NotificationEvent;
 import com.tuanhust.notificationservice.service.NotificationChannel;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -13,6 +14,7 @@ import org.thymeleaf.context.Context;
 
 import java.util.Map;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class EmailChannel implements NotificationChannel {
@@ -46,6 +48,7 @@ public class EmailChannel implements NotificationChannel {
             helper.setText(htmlContent, true);
 
             mailSender.send(message);
+            log.info("Sent email to {}", event.getRecipient());
         } catch (Exception e) {
             throw new RuntimeException("Failed to send email", e);
         }

@@ -12,7 +12,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 public class ActivityServiceApplication {
 
-    public static void main(String[] args) {
+    static void main(String[] args) {
         SpringApplication.run(ActivityServiceApplication.class, args);
     }
 

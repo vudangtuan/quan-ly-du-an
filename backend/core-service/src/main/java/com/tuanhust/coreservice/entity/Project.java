@@ -44,16 +44,16 @@ public class Project {
     @Enumerated(EnumType.STRING)
     private Status status;
 
-    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "project")
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "project",orphanRemoval = true)
     @OrderBy("name ASC")
     private Set<Label> labels;
-    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "project")
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "project",orphanRemoval = true)
     @OrderBy("sortOrder ASC")
     private Set<BoardColumn> boardColumns;
-    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "project")
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "project",orphanRemoval = true)
     @OrderBy("joinedAt ASC")
     private Set<ProjectMember> members;
     @OrderBy("completed ASC, priority DESC ")
-    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "project")
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "project",orphanRemoval = true)
     private Set<Task> tasks;
 }

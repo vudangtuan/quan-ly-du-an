@@ -2,10 +2,7 @@ package com.tuanhust.coreservice.entity;
 
 import com.tuanhust.coreservice.entity.ids.TaskAssigneeId;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 import org.springframework.data.annotation.CreatedDate;
@@ -15,7 +12,8 @@ import java.time.Instant;
 
 @Entity
 @Builder
-@Data
+@Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @EntityListeners(AuditingEntityListener.class)

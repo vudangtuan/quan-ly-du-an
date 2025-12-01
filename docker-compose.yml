@@ -95,6 +95,7 @@ services:
       - JWT_PUBLIC_KEY_PATH=file:/app/certs/public_key.pem
       - SPRING_RABBITMQ_HOST=rabbitmq
       - CORS_ALLOWED_ORIGINS=${FRONTEND_URL}
+      - TZ=Asia/Ho_Chi_Minh
     depends_on:
       - postgres
       - redis
@@ -146,6 +147,7 @@ services:
       - MAIL_SENDER_USERNAME=${MAIL_SENDER_USERNAME}
       - MAIL_SENDER_PASSWORD=${MAIL_SENDER_PASSWORD}
       - FROM_MAIL=${FROM_MAIL}
+      - EUREKA_URI=${EUREKA_URI}
     depends_on:
       - eureka-server
       - rabbitmq

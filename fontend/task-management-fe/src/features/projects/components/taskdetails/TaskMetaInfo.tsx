@@ -134,8 +134,8 @@ export const TaskMetaInfo: React.FC<TaskMetaInfo> = ({
 
                 <input
                     type="date"
-                    min={new Date().toISOString().split('T')[0]}
-                    value={dueAt ? new Date(dueAt).toISOString().split("T")[0] : ""}
+                    min={new Date().toLocaleDateString('sv')}
+                    value={dueAt ? new Date(dueAt).toLocaleDateString('sv') : ""}
                     onChange={handleSaveDueDate}
                     disabled={!canManage || task.completed || isUpdating}
                     className="w-full px-3 py-2 text-sm text-gray-900 bg-gray-50

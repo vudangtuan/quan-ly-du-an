@@ -7,7 +7,7 @@ export const isOverdue = (dateString?: string | null, isCompleted: boolean = fal
     const due = new Date(dateString);
     const now = new Date();
 
-    now.setHours(0, 0, 0, 0);
+    now.setHours(23, 59, 59, 0);
 
     return due < now;
 };
@@ -15,23 +15,13 @@ export const isOverdue = (dateString?: string | null, isCompleted: boolean = fal
 export const formatDate = (dateString: string | null) => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);
-    return date.toLocaleDateString('vi-VN', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-    });
+    return date.toLocaleDateString();
 };
 
 export const formatDateLocalDate = (dateString: string | null) => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);
-    return date.toLocaleDateString('vi-VN', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
+    return date.toLocaleString();
 };
 
 export const getDaysOnly = (date1: Date | string, date2: Date | string): number => {

@@ -176,8 +176,8 @@ export const EditProjectModal: React.FC<EditProjectModalProps> = ({
                             </label>
                             <input
                                 type="date"
-                                min={new Date().toISOString().split('T')[0]}
-                                value={formData.dueAt ? new Date(formData.dueAt).toISOString().split('T')[0] : ""}
+                                min={new Date().toLocaleDateString('sv')}
+                                value={formData.dueAt ? new Date(formData.dueAt).toLocaleDateString('sv') : ""}
                                 onChange={(e) => {
                                     const dueAtISO = e.target.value ? new Date(e.target.value).toISOString() : null;
                                     handleChange('dueAt', dueAtISO!)
