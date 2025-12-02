@@ -7,6 +7,8 @@ import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 import org.hibernate.annotations.SQLRestriction;
 
+import java.time.Instant;
+
 
 @Entity
 @Table(name = "board_columns",
@@ -35,6 +37,7 @@ public class BoardColumn {
     private Double sortOrder;
     @Enumerated(EnumType.STRING)
     private Status status;
+    private Instant archivedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id",nullable = false)

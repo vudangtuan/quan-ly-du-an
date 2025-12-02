@@ -143,6 +143,7 @@ public class TaskServiceImpl implements TaskService {
                 );
         task.setStatus(Status.ARCHIVED);
         task.setSortOrder(null);
+        task.setArchivedAt(Instant.now());
 
         publishTaskActivity(projectId, task.getTaskId(), ActionType.ARCHIVE_TASK,
                 "Đã lưu trữ nhiệm vụ",
@@ -159,6 +160,7 @@ public class TaskServiceImpl implements TaskService {
                         () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nhiệm vụ không tồn tại")
                 );
         task.setStatus(Status.ACTIVE);
+        task.setArchivedAt(null);
         if (sortOrder == null || sortOrder.isNaN()) {
             Double maxSortOrder = taskRepository.getMaxSortOrder(projectId, task.getBoardColumnId())
                     .orElse(0.0);
@@ -176,7 +178,7 @@ public class TaskServiceImpl implements TaskService {
     @Transactional
     @CacheEvict(value = "taskDetail", key = "#taskId")
     public void deleteTask(String projectId, String taskId) {
-        Task task = taskRepository.findTaskByProjectIdAndTaskId(projectId, taskId)
+        Task task = taskRepository.findArchiveTaskByProjectIdAndTaskId(projectId, taskId)
                 .orElseThrow(
                         () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nhiệm vụ không tồn tại")
                 );

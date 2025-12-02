@@ -1,7 +1,7 @@
 import {ProjectDetailHeader} from "../components/ProjectDetailHeader";
 import {Link, Outlet, useLocation, useParams} from "react-router-dom";
 import React from "react";
-import {useQuery, useQueryClient} from "@tanstack/react-query";
+import {useInfiniteQuery, useQuery, useQueryClient} from "@tanstack/react-query";
 import {ProjectService} from "../services/ProjectService";
 import {QUERY_GC_TIME, QUERY_STALE_TIME} from "@config/query.config";
 import {Loader2} from "lucide-react";
@@ -18,6 +18,7 @@ export interface ProjectDetailContext {
     allTasks: TaskResponse[] | undefined;
     filteredKanbanTasks: TaskResponse[];
     activityStream: any;
+    archivedItemsInfiniteQuery: any
 }
 
 export const ProjectDetailPage: React.FC = () => {
@@ -27,6 +28,21 @@ export const ProjectDetailPage: React.FC = () => {
     const location = useLocation();
     const activityStream = useActivityStream(projectId);
 
+    const archivedItemsInfiniteQuery = useInfiniteQuery({
+        queryKey: ["archived", projectId],
+        queryFn: ({pageParam = 0}) => {
+            return ProjectService.getItemArchived(projectId!, pageParam, 10);
+        },
+        enabled: !!projectId,
+        staleTime: QUERY_STALE_TIME.SHORT,
+        gcTime: QUERY_GC_TIME.SHORT,
+        initialPageParam: 0,
+        getNextPageParam: (lastPage, allPages) => {
+            const nextPage = allPages.length;
+            const totalPages = lastPage.totalPages || 0;
+            return nextPage < totalPages ? nextPage : undefined;
+        },
+    })
 
     const {data: projectDetail, isLoading: isLoadingProject, error: errorProject} = useQuery({
         queryKey: ["projectDetails", projectId],
@@ -46,7 +62,7 @@ export const ProjectDetailPage: React.FC = () => {
 
     const filterControls = useTaskFilter(tasks);
     const showKanbanFilterBar = location.pathname.endsWith('/kanban');
-    if (isLoadingProject || isLoadingTasks || activityStream.isLoading) {
+    if (isLoadingProject || isLoadingTasks || activityStream.isLoading || archivedItemsInfiniteQuery.isPending) {
         return (
             <div className="flex w-full justify-center h-full items-center gap-2 text-gray-600">
                 <Loader2 className="h-5 w-5 animate-spin text-blue-700"/>
@@ -64,7 +80,8 @@ export const ProjectDetailPage: React.FC = () => {
         projectDetail: projectDetail!,
         allTasks: tasks,
         filteredKanbanTasks: filterControls.filteredTasks,
-        activityStream: activityStream
+        activityStream: activityStream,
+        archivedItemsInfiniteQuery: archivedItemsInfiniteQuery
     };
 
     return (

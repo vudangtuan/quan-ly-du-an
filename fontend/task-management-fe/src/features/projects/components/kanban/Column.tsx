@@ -24,7 +24,6 @@ export const Column: React.FC<ColumnProps> = ({column, tasks, index}) => {
     const queryClient = useQueryClient();
     const [isEditing, setIsEditing] = useState(false);
     const [editName, setEditName] = useState(column.name);
-    const confirm = useConfirm();
 
     const updateColumnMutation = useMutation({
         mutationFn: (data: { name: string }) =>
@@ -37,26 +36,6 @@ export const Column: React.FC<ColumnProps> = ({column, tasks, index}) => {
                         c.boardColumnId === column.boardColumnId ? data : c
                     )
                 }));
-            setIsEditing(false);
-        },
-        onError: (e) => {
-            toast.error(e.message);
-        }
-    });
-
-    const deleteColumnMutation = useMutation({
-        mutationFn: () =>
-            ProjectService.deleteColumn(column.projectId, column.boardColumnId),
-        onSuccess: () => {
-            queryClient.setQueryData(["projectDetails", column.projectId],
-                (old: ProjectDetailResponse) => ({
-                    ...old,
-                    boardColumns: old.boardColumns.filter((c: BoardColumnResponse) =>
-                        c.boardColumnId !== column.boardColumnId)
-                }));
-            queryClient.setQueryData(["tasks", column.projectId], (old: TaskResponse[]) => {
-                return old?.filter(t => t.boardColumnId !== column.boardColumnId) || [];
-            });
             setIsEditing(false);
         },
         onError: (e) => {
@@ -86,15 +65,6 @@ export const Column: React.FC<ColumnProps> = ({column, tasks, index}) => {
             return {previousData};
         },
         onSuccess: (_, __, onMutateResult) => {
-            let isRestored = false;
-            const cleanupTimer = setTimeout(() => {
-                if (!isRestored) {
-                    queryClient.setQueryData(["tasks", column.projectId], (old: TaskResponse[]) => {
-                        return old?.filter(t => t.boardColumnId !== column.boardColumnId) || [];
-                    });
-                }
-            }, 5010);
-
             toast.success(
                 (t) => (
                     <span className="flex items-center gap-3">
@@ -102,12 +72,12 @@ export const Column: React.FC<ColumnProps> = ({column, tasks, index}) => {
                         <button
                             onClick={async () => {
                                 toast.dismiss(t.id);
-                                isRestored = true;
-                                clearTimeout(cleanupTimer);
                                 if (onMutateResult?.previousData) {
                                     await restoreColumnMutation.mutateAsync();
-                                    queryClient.setQueryData(["projectDetails", column.projectId],
-                                        onMutateResult.previousData);
+                                    if (restoreColumnMutation.isSuccess) {
+                                        queryClient.setQueryData(["projectDetails", column.projectId],
+                                            onMutateResult.previousData);
+                                    }
                                 }
                             }}
                             className="px-2 py-1 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded"
@@ -148,25 +118,7 @@ export const Column: React.FC<ColumnProps> = ({column, tasks, index}) => {
             label: "Lưu trữ",
             icon: <Archive className="h-4 w-4"/>,
             onClick: () => archiveColumnMutation.mutate()
-        },
-        {
-            label: 'Xóa',
-            icon: <Trash2 className="h-4 w-4"/>,
-            onClick: async () => {
-                const confirmed = await confirm({
-                    title: 'Xóa?',
-                    description: `Bạn có chắc chắn muốn xóa cột "${column.name}"?`,
-                    warningText: "Tất cả nhiệm vụ sẽ bị xóa hết.",
-                    confirmText: 'Xóa',
-                    isLoading: deleteColumnMutation.isPending,
-                    type: 'danger',
-                });
-                if (confirmed) {
-                    deleteColumnMutation.mutate();
-                }
-            },
-            danger: true,
-        },
+        }
     ];
 
     const handleSubmit = (e: React.FormEvent) => {

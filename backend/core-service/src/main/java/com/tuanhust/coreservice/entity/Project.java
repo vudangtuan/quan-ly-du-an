@@ -40,6 +40,7 @@ public class Project {
     @LastModifiedDate
     private Instant updatedAt;
     private Instant dueAt;
+    private Instant archivedAt;
 
     @Enumerated(EnumType.STRING)
     private Status status;

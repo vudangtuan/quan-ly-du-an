@@ -1,5 +1,6 @@
 import {privateApi} from '@config/api.config';
 import type {
+    ArchivedItemResponse,
     BoardColumnRequest,
     BoardColumnResponse,
     CreateProjectRequest, EditProjectData, InviteMemberRequest, LabelRequest, LabelResponse,
@@ -106,5 +107,17 @@ export const ProjectService = {
                     sortOrder: sortOrder
                 }
             });
+    },
+
+    getItemArchived: async (projectId: string,page:number,size:number): Promise<PaginatedResponse<ArchivedItemResponse>> => {
+        return await privateApi.get(`/project/${projectId}/archived`,{
+            params: {
+                page: page,
+                size: size
+            }
+        });
+    },
+    getMyArchivedProjects: async (): Promise<ArchivedItemResponse[]> => {
+        return await privateApi.get('/project/archived/me');
     },
 }

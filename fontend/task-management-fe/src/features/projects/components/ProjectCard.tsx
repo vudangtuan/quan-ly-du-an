@@ -35,6 +35,9 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({project}) => {
             ProjectService.unarchiveProject(project.projectId),
         onError: (err) => {
             toast.error(err.message);
+        },
+        onSettled:()=>{
+            queryClient.invalidateQueries({ queryKey: ['myArchivedProjects',userId] });
         }
     })
     const archiveProjectMutation = useMutation({
@@ -84,31 +87,12 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({project}) => {
                 queryClient.setQueryData(['projects', userId], context.previousData);
             }
             toast.error(err.message);
-        }
-    });
-    const deleteProjectMutation = useMutation({
-        mutationFn: () => ProjectService.deleteProject(project.projectId),
-        onSuccess: () => {
-            queryClient.setQueryData(["projects", userId],
-                (oldData: InfiniteData<PaginatedResponse<ProjectResponse>>) => {
-                    if (!oldData) return oldData;
-                    return {
-                        ...oldData,
-                        pages: oldData.pages.map((page: PaginatedResponse<ProjectResponse>) => {
-                            return {
-                                ...page,
-                                content: page.content
-                                    .filter(p => p.projectId != project.projectId)
-                            }
-                        })
-                    }
-                });
-            toast.success("Đã xóa");
         },
-        onError: (e) => {
-            toast.error(e.message);
+        onSettled:()=>{
+            queryClient.invalidateQueries({ queryKey: ['myArchivedProjects',userId] });
         }
     });
+
     const canManage = () => {
         if (project.currentRoleInProject !== "OWNER") {
             toast.error("Chỉ chủ sở hữu mới có quyền")
@@ -148,28 +132,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({project}) => {
                     archiveProjectMutation.mutate();
                 }
             },
-        },
-        {
-            label: 'Xóa dự án',
-            icon: <Trash2 className="h-4 w-4"/>,
-            onClick: async () => {
-                if (canManage()) {
-                    const confirmed = await confirm({
-                        title: 'Xóa dự án?',
-                        description: `Bạn có chắc chắn muốn xóa dự án "${project.name}"?`,
-                        warningText: 'Mọi thứ trong dự án sẽ bị xóa hết và không thể khôi phục',
-                        confirmText: 'Xóa',
-                        isLoading: deleteProjectMutation.isPending,
-                        type: 'danger',
-                    });
-
-                    if (confirmed) {
-                        deleteProjectMutation.mutate();
-                    }
-                }
-            },
-            danger: true,
-        },
+        }
     ];
 
     return (

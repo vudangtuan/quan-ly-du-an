@@ -9,6 +9,8 @@ import com.tuanhust.coreservice.response.*;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 
 public interface ProjectService {
     ProjectResponse createProject(ProjectRequest projectRequest);
@@ -50,4 +52,8 @@ public interface ProjectService {
     BoardColumnResponse archiveBoardColumn(String projectId, String columnId);
 
     BoardColumnResponse restoreBoardColumn(String projectId, String columnId,Double sortOrder);
+
+    PaginatedResponse<ArchivedItemResponse> getArchivedItem(String projectId,Pageable pageable);
+
+    List<ArchivedItemResponse> getMyArchivedProjects();
 }

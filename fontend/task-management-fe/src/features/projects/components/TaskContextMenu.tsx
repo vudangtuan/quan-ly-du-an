@@ -1,8 +1,7 @@
 import React, {useState} from "react";
 import {TaskResponse} from "@features/projects/types/task.types";
-import {Archive, Eye, Trash2} from "lucide-react";
+import {Archive, Eye} from "lucide-react";
 import {ContextMenu, MenuItem} from "@components/MenuContext";
-import {useConfirm} from "@components/ConfirmDialog";
 import toast from "react-hot-toast";
 import {TaskService} from "@features/projects/services/TaskService";
 import {useMutation, useQueryClient} from "@tanstack/react-query";
@@ -24,7 +23,6 @@ export const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
                                                                     children
                                                                 }) => {
     const queryClient = useQueryClient();
-    const confirm = useConfirm();
     const [openDetailTask, setOpenDetailTask] = useState(false);
 
     const canManage = () => {
@@ -69,8 +67,10 @@ export const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
                                 toast.dismiss(t.id);
                                 if (onMutateResult?.previousData) {
                                     await restoreTaskMutation.mutateAsync(task.sortOrder);
-                                    queryClient.setQueryData(["tasks", projectId],
-                                        onMutateResult.previousData);
+                                    if(restoreTaskMutation.isSuccess){
+                                        queryClient.setQueryData(["tasks", projectId],
+                                            onMutateResult.previousData);
+                                    }
                                 }
                             }}
                             className="px-2 py-1 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded"
@@ -84,20 +84,7 @@ export const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
         }
     });
 
-    const deleteTaskMutation = useMutation({
-        mutationFn: () => TaskService.deleteTask(projectId, task.taskId),
-        onError: (err: Error) => {
-            toast.error(err.message);
-        },
-        onSuccess: () => {
-            toast.success("Xóa thành công");
-            queryClient.setQueryData<TaskResponse[]>(["tasks", projectId],
-                (old) => {
-                    if (!old) return [];
-                    return old.filter((t: TaskResponse) => t.taskId !== task.taskId);
-                });
-        }
-    });
+
 
     // Menu items
     const menuItems: MenuItem[] = [
@@ -120,27 +107,7 @@ export const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
                     archiveTaskMutation.mutate();
                 }
             }
-        },
-        {
-            label: 'Xóa',
-            icon: <Trash2 className="h-4 w-4"/>,
-            onClick: async () => {
-                if (canManage()) {
-                    const confirmed = await confirm({
-                        title: 'Xóa?',
-                        description: `Bạn có chắc chắn muốn xóa task "${task.title}"?`,
-                        warningText: "Mọi thứ trong task sẽ bị xóa hết. Không thể khôi phục lại!",
-                        confirmText: 'Xóa',
-                        isLoading: deleteTaskMutation.isPending,
-                        type: 'danger',
-                    });
-                    if (confirmed) {
-                        deleteTaskMutation.mutate();
-                    }
-                }
-            },
-            danger: true,
-        },
+        }
     ];
 
     return (

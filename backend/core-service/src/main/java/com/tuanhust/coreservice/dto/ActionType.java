@@ -4,7 +4,6 @@ public enum ActionType {
     //owner action
     CREATE_PROJECT,
     UPDATE_PROJECT,
-    DELETE_PROJECT,
     ARCHIVE_PROJECT,
     RESTORE_PROJECT,
 

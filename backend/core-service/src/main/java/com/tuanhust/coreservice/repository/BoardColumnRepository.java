@@ -20,28 +20,11 @@ public interface BoardColumnRepository extends JpaRepository<BoardColumn,String>
 
 
     @Query(value = """
-            select bc from BoardColumn bc where bc.project.projectId=:projectId order by bc.sortOrder
-            """)
-    List<BoardColumn> findAllByProjectId(String projectId);
-
-    @Query(value = "update BoardColumn bc set bc.name=:name where bc.boardColumnId=:columnId")
-    @Modifying
-    void updateName(String columnId,String name);
-
-    @Query(value = """
-            select case when (count(bc)>0) then true else false end
-                         from BoardColumn bc where bc.boardColumnId=:boardId
-                        and bc.project.projectId=:projectId
-            """)
-    Boolean existsByBoardColumnIdAndProjectId(String boardId, String projectId);
-
-    @Query(value = """
             select bc from BoardColumn bc where bc.boardColumnId=:columnId and bc.project.projectId=:projectId
             """)
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<BoardColumn> findByProjectIdAndBoardColumnId(String projectId, String columnId);
 
-    void deleteByProjectIdAndBoardColumnId(String projectId, String columnId);
 
     @Query(value = """
             select * from board_columns where project_id=:projectId and board_column_id=:columnId and status='ARCHIVED'

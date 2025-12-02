@@ -45,6 +45,7 @@ public class Task {
     private Priority priority;
     private Boolean completed;
     private Instant dueAt;
+    private Instant archivedAt;
     @CreatedDate
     @Column(updatable = false)
     private Instant createdAt;

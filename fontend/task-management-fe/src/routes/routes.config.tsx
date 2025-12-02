@@ -14,6 +14,7 @@ import {ProjectGantt} from "@features/projects/components/gantt";
 import {MyTasksPage} from "@features/mytasks/MyTasksPage";
 import SettingsPage from "@features/settings/SettingsPage";
 import {AcceptInvitePage} from "@features/projects/pages/AcceptInvitePage";
+import {ProjectStorage} from "@features/projects/components/storage";
 
 
 // Ví dụ: Tạo một trang NotFound tạm thời
@@ -43,6 +44,7 @@ export const routesConfig = [
                             {path: 'timeline', element: <ProjectTimeline/>},
                             {path: 'list', element: <ProjectList/>},
                             {path: 'gantt', element: <ProjectGantt/>},
+                            {path: 'archived',element: <ProjectStorage/>}
                         ]
                     },
                 ],

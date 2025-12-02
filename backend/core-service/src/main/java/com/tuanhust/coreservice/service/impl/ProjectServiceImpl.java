@@ -199,6 +199,7 @@ public class ProjectServiceImpl implements ProjectService {
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dự án không tồn tại")
         );
         project.setStatus(Status.ARCHIVED);
+        project.setArchivedAt(Instant.now());
 
         publishProjectActivity(projectId, ActionType.ARCHIVE_PROJECT, "Đã lưu trữ dự án",
                 projectId, project.getName(), null);
@@ -213,6 +214,7 @@ public class ProjectServiceImpl implements ProjectService {
                         "Dự án không tồn tại or chưa được lưu trữ")
         );
         project.setStatus(Status.ACTIVE);
+        project.setArchivedAt(null);
 
         publishProjectActivity(projectId, ActionType.RESTORE_PROJECT, "Đã khôi phục dự án",
                 projectId, project.getName(), null);
@@ -228,12 +230,7 @@ public class ProjectServiceImpl implements ProjectService {
             }
     )
     public void deleteProject(String projectId) {
-        Project project = projectRepository.findById(projectId).orElseThrow(
-                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dự án không tồn tại")
-        );
-        projectRepository.removeProject(project.getProjectId());
-        publishProjectActivity(projectId, ActionType.DELETE_PROJECT, "Đã xóa dự án",
-                projectId, project.getName(), null);
+        projectRepository.removeProject(projectId);
     }
 
 
@@ -632,10 +629,9 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional
-    @CacheEvict(value = "projectDetail", key = "#projectId")
     public void deleteBoardColumn(String projectId, String columnId) {
         BoardColumn boardColumn = boardColumnRepository.
-                findByProjectIdAndBoardColumnId(projectId, columnId)
+                findArchivedByProjectIdAndBoardColumnId(projectId, columnId)
                 .orElseThrow(
                         () -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                                 "Cột không tồn tại")
@@ -656,6 +652,7 @@ public class ProjectServiceImpl implements ProjectService {
                                 "Cột không tồn tại")
                 );
         boardColumn.setStatus(Status.ARCHIVED);
+        boardColumn.setArchivedAt(Instant.now());
         boardColumn.setSortOrder(null);
         publishProjectActivity(projectId, ActionType.ARCHIVE_BOARD_COLUMN, "Đã lưu trữ cột",
                 boardColumn.getBoardColumnId(), boardColumn.getName(), null);
@@ -680,14 +677,14 @@ public class ProjectServiceImpl implements ProjectService {
                                 "Cột không tồn tại")
                 );
         if (sortOrder == null || sortOrder.isNaN()) {
-            boardColumn.setStatus(Status.ACTIVE);
             Double maxSortOrder = boardColumnRepository
                     .getMaxSortOrderFromProject(projectId).orElse(0.0);
             boardColumn.setSortOrder(Math.ceil(maxSortOrder) + 1);
         } else {
-            boardColumn.setStatus(Status.ACTIVE);
             boardColumn.setSortOrder(sortOrder);
         }
+        boardColumn.setStatus(Status.ACTIVE);
+        boardColumn.setArchivedAt(null);
         publishProjectActivity(projectId, ActionType.RESTORE_BOARD_COLUMN, "Đã khôi phục cột",
                 boardColumn.getBoardColumnId(), boardColumn.getName(), null);
         return BoardColumnResponse.builder()
@@ -697,6 +694,28 @@ public class ProjectServiceImpl implements ProjectService {
                 .projectId(projectId)
                 .status(boardColumn.getStatus())
                 .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PaginatedResponse<ArchivedItemResponse> getArchivedItem(String projectId,Pageable pageable) {
+        Page<ArchivedItemResponse> page = projectRepository.findArchivedByProjectId(projectId, pageable);
+        return PaginatedResponse.<ArchivedItemResponse>builder()
+                .content(page.getContent())
+                .first(page.isFirst())
+                .last(page.isLast())
+                .number(page.getNumber())
+                .size(page.getSize())
+                .totalElements(page.getTotalElements())
+                .totalPages(page.getTotalPages())
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ArchivedItemResponse> getMyArchivedProjects() {
+        String userId = getCurrentUser().getUserId();
+        return projectRepository.findArchivedProjectsByOwnerId(userId);
     }
 
 

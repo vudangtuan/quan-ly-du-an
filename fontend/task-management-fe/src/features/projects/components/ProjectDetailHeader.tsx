@@ -1,5 +1,5 @@
 import React from "react"
-import {Clock3, GanttChart, Home, KanbanSquare, LayoutDashboard, List} from "lucide-react";
+import {Archive, Clock3, GanttChart, Home, KanbanSquare, LayoutDashboard, List, LogOut} from "lucide-react";
 import {Link, NavLink, useParams} from "react-router-dom";
 
 
@@ -11,6 +11,7 @@ const projectTabs = [
     {name: 'Kanban', href: 'kanban', icon: KanbanSquare},
     {name: 'Timeline', href: 'timeline', icon: Clock3},
     {name: 'Gantt', href: 'gantt', icon: GanttChart},
+    {name: 'Archived',href: 'archived', icon: Archive},
 ];
 
 interface ProjectDetailHeaderProps {

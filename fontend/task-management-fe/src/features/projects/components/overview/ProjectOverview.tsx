@@ -5,6 +5,7 @@ import {ProjectMember} from "@features/projects/components/overview/ProjectMembe
 import {ProjectLabel} from "@features/projects/components/overview/ProjectLabel";
 import {ProjectDetailContext} from "@features/projects/pages/ProjectDetailPage";
 import {ProjectActivity} from "@features/projects/components/overview/ProjectActivity";
+import {LogOut, ShieldAlert, Trash2} from "lucide-react";
 
 export const ProjectOverview: React.FC = () => {
     const {projectDetail:project} = useOutletContext<ProjectDetailContext>();

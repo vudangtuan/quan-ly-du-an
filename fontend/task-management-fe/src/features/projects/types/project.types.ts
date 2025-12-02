@@ -119,3 +119,10 @@ export interface ChangeLog {
     old: string | null;
     new: string | null;
 }
+
+export interface ArchivedItemResponse {
+    itemId: string;
+    name: string;
+    type: string;
+    archivedAt: string;
+}

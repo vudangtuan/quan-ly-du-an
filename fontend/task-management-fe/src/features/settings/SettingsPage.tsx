@@ -1,18 +1,18 @@
 import React, {useState} from 'react';
 import {useAuthStore} from '@store/slices/authSlice';
-import {User, Lock, Save, Loader2, User2, ShieldAlert, LogOut} from 'lucide-react';
+import {Lock, Save, Loader2, User2, ShieldAlert, LogOut} from 'lucide-react';
 import toast from 'react-hot-toast';
 import {useMutation} from "@tanstack/react-query";
 import {UserService} from "@features/projects/services/UserService";
 import {UserInfo} from "@features/auth/types/auth.types";
 import {AuthService} from "@features/auth/services/authService";
-import {data, useNavigate} from "react-router-dom";
 import {useConfirm} from "@components/ConfirmDialog";
+import {ArchivedProjectsSection} from "@features/settings/ArchivedProjectsSection";
+
 
 
 const SettingsPage: React.FC = () => {
     const {userInfo} = useAuthStore();
-    const navigate = useNavigate();
     const confirm = useConfirm();
 
     // --- State cho Form Thông tin ---
@@ -39,7 +39,7 @@ const SettingsPage: React.FC = () => {
     const logoutMutation = useMutation({
         mutationFn: () => AuthService.logout(),
         onSuccess: () => {
-            window.location.href="/login";
+            window.location.href = "/login";
             logoutAction();
         },
         onError: (e) => {
@@ -102,6 +102,7 @@ const SettingsPage: React.FC = () => {
             logoutMutation.mutate();
         }
     };
+
     return (
         <div className="max-w-6xl mx-auto p-8">
             <h1 className="text-2xl font-bold text-gray-900 mb-8">Cài đặt tài khoản</h1>
@@ -214,7 +215,7 @@ const SettingsPage: React.FC = () => {
                                 disabled={createPasswordMutation.isPending ||
                                     updatePasswordMutation.isPending ||
                                     (userInfo.hasPassword && !currentPassword) ||
-                                    !newPassword.trim() ||!currentPassword.trim() ||
+                                    !newPassword.trim() || !currentPassword.trim() ||
                                     newPassword.trim() !== confirmPassword.trim()}
                                 className="w-full sm:w-auto flex justify-center items-center gap-2 px-5 py-2.5 bg-orange-600 text-white font-medium rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
@@ -226,6 +227,8 @@ const SettingsPage: React.FC = () => {
                         </div>
                     </form>
                 </div>
+
+                <ArchivedProjectsSection />
 
                 <div className="lg:col-span-2 bg-white rounded-xl border border-red-200 shadow-sm p-6">
                     <div className="flex items-center gap-3 mb-4">

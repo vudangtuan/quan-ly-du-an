@@ -21,6 +21,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 
 
 @RestController
@@ -225,5 +226,22 @@ public class ProjectController {
     ) {
         return ResponseEntity.ok(ApiResponse.success("Restored",
                 projectService.restoreBoardColumn(projectId, columnId, sortOrder)));
+    }
+
+    @ProjectRoles
+    @GetMapping("/{projectId}/archived")
+    public ResponseEntity<ApiResponse<PaginatedResponse<ArchivedItemResponse>>> getArchived(
+            @PathVariable String projectId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ){
+        Pageable pageable = PageRequest.of(page, size);
+        return ResponseEntity.ok(ApiResponse.success(
+                projectService.getArchivedItem(projectId,pageable)));
+    }
+
+    @GetMapping("/archived/me")
+    public ResponseEntity<ApiResponse<List<ArchivedItemResponse>>> getMyArchivedProjects() {
+        return ResponseEntity.ok(ApiResponse.success(projectService.getMyArchivedProjects()));
     }
 }
