@@ -26,6 +26,7 @@ public class NotificationPublisher {
         }
     }
 
+
     public void publish(NotificationEvent event) {
         if (TransactionSynchronizationManager.isActualTransactionActive()) {
             TransactionSynchronizationManager.registerSynchronization(

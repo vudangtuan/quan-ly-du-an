@@ -3,9 +3,7 @@ package com.tuanhust.coreservice.service.impl;
 import com.tuanhust.coreservice.client.AuthServiceClient;
 import com.tuanhust.coreservice.config.UserPrincipal;
 import com.tuanhust.coreservice.dto.ActionType;
-import com.tuanhust.coreservice.dto.ActivityEvent;
 import com.tuanhust.coreservice.dto.InvitationData;
-import com.tuanhust.coreservice.dto.NotificationEvent;
 import com.tuanhust.coreservice.entity.BoardColumn;
 import com.tuanhust.coreservice.entity.Label;
 import com.tuanhust.coreservice.entity.Project;
@@ -13,8 +11,7 @@ import com.tuanhust.coreservice.entity.ProjectMember;
 import com.tuanhust.coreservice.entity.enums.Role;
 import com.tuanhust.coreservice.entity.enums.Status;
 import com.tuanhust.coreservice.entity.ids.ProjectMemberID;
-import com.tuanhust.coreservice.publisher.ActivityPublisher;
-import com.tuanhust.coreservice.publisher.NotificationPublisher;
+import com.tuanhust.coreservice.listener.ProjectEvent;
 import com.tuanhust.coreservice.repository.*;
 import com.tuanhust.coreservice.request.BoardColumnRequest;
 import com.tuanhust.coreservice.request.InviteMemberRequest;
@@ -28,6 +25,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -57,9 +55,8 @@ public class ProjectServiceImpl implements ProjectService {
     private final BoardColumnRepository boardColumnRepository;
     private final TaskAssigneeRepository taskAssigneeRepository;
     private final AuthServiceClient authClient;
-    private final ActivityPublisher activityPublisher;
-    private final NotificationPublisher notificationPublisher;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Value("${app.frontend-url}")
     private String frontendUrl;
@@ -103,9 +100,10 @@ public class ProjectServiceImpl implements ProjectService {
 
         Project savedProject = projectRepository.save(project);
 
-        publishProjectActivity(savedProject.getProjectId(), ActionType.CREATE_PROJECT,
-                "Đã tạo dự án", savedProject.getProjectId(),
-                savedProject.getName(), null);
+        eventPublisher.publishEvent(new ProjectEvent(
+                savedProject, userCurrent, ActionType.CREATE_PROJECT, "Đã tạo dự án",
+                savedProject.getProjectId(), savedProject.getName(), null
+        ));
 
 
         return ProjectResponse.builder()
@@ -189,8 +187,10 @@ public class ProjectServiceImpl implements ProjectService {
             Map<String, Object> metadata = new HashMap<>();
             metadata.put("changes", changes);
             String description = "đã cập nhật thông tin dự án";
-            publishProjectActivity(projectId, ActionType.UPDATE_PROJECT, description,
-                    projectId, project.getName(), metadata);
+            eventPublisher.publishEvent(new ProjectEvent(
+                    project, getCurrentUser(), ActionType.UPDATE_PROJECT,
+                    description, projectId, project.getName(), metadata
+            ));
         }
     }
 
@@ -204,8 +204,10 @@ public class ProjectServiceImpl implements ProjectService {
         project.setStatus(Status.ARCHIVED);
         project.setArchivedAt(Instant.now());
 
-        publishProjectActivity(projectId, ActionType.ARCHIVE_PROJECT, "Đã lưu trữ dự án",
-                projectId, project.getName(), null);
+        eventPublisher.publishEvent(new ProjectEvent(
+                project, getCurrentUser(), ActionType.ARCHIVE_PROJECT,
+                "Đã lưu trữ dự án", projectId, project.getName(), null
+        ));
     }
 
     @Override
@@ -219,8 +221,10 @@ public class ProjectServiceImpl implements ProjectService {
         project.setStatus(Status.ACTIVE);
         project.setArchivedAt(null);
 
-        publishProjectActivity(projectId, ActionType.RESTORE_PROJECT, "Đã khôi phục dự án",
-                projectId, project.getName(), null);
+        eventPublisher.publishEvent(new ProjectEvent(
+                project, getCurrentUser(), ActionType.RESTORE_PROJECT,
+                "Đã khôi phục dự án", projectId, project.getName(), null
+        ));
     }
 
     @Override
@@ -347,9 +351,15 @@ public class ProjectServiceImpl implements ProjectService {
 
             projectMember.setRole(role);
 
-            publishProjectActivity(projectId, ActionType.UPDATE_ROLE,
+            eventPublisher.publishEvent(new ProjectEvent(
+                    projectMember.getProject(),
+                    getCurrentUser(),
+                    ActionType.UPDATE_ROLE,
                     "Đã cập nhập vai trò",
-                    projectMember.getMemberId(), userPrincipal.getFullName(), metadata);
+                    projectMember.getMemberId(),
+                    userPrincipal.getFullName(),
+                    metadata
+            ));
         }
     }
 
@@ -390,26 +400,15 @@ public class ProjectServiceImpl implements ProjectService {
             String inviteLink = frontendUrl + "/accept-invite?token=" + token;
 
             Map<String, Object> props = new HashMap<>();
-            props.put("template", "email-invite");
-            props.put("recipientName", recipientUser.getFullName());
-            props.put("creatorName", currentUser.getFullName());
-            props.put("creatorId", currentUser.getUserId());
-            props.put("projectName", project.getName());
             props.put("role", request.getRole().toString());
-            props.put("expiryDays", 7);
-            props.put("type", "INVITE_MEMBER");
             props.put("link", inviteLink);
 
-            NotificationEvent event = NotificationEvent.builder()
-                    .channel("ALL")
-                    .recipient(recipientUser.getEmail())
-                    .recipientId(recipientUser.getUserId())
-                    .subject("Lời mời tham gia dự án: " + project.getName())
-                    .content("Bạn nhận được lời mời tham gia dự án.")
-                    .properties(props)
-                    .build();
+            eventPublisher.publishEvent(new ProjectEvent(
+                    project, currentUser, recipientUser, ActionType.INVITE_MEMBER,
+                    "", "", "", props
+            ));
 
-            notificationPublisher.publish(event);
+
 
             redisTemplate.opsForValue().set(redisKey, invitation, 7, TimeUnit.DAYS);
             redisTemplate.opsForValue().set(pendingKey, token, 7, TimeUnit.DAYS);
@@ -449,9 +448,15 @@ public class ProjectServiceImpl implements ProjectService {
                 .build();
         ProjectMember saved = projectMemberRepository.save(projectMember);
 
-        publishProjectActivity(project.getProjectId(), ActionType.ADD_MEMBER,
+        eventPublisher.publishEvent(new ProjectEvent(
+                project,
+                getCurrentUser(),
+                ActionType.ADD_MEMBER,
                 "Đã tham gia dự án qua lời mời",
-                project.getProjectId(), invitation.getInviterName(), null);
+                project.getProjectId(),
+                invitation.getInviterName(),
+                null
+        ));
 
         redisTemplate.delete(tokenKey);
         redisTemplate.delete(pendingKey);
@@ -491,9 +496,15 @@ public class ProjectServiceImpl implements ProjectService {
                 );
 
 
-        publishProjectActivity(projectId, ActionType.DELETE_MEMBER,
+        eventPublisher.publishEvent(new ProjectEvent(
+                projectMember.getProject(),
+                getCurrentUser(),
+                ActionType.DELETE_MEMBER,
                 "Đã xóa thành viên",
-                memberId, userPrincipal.getFullName(), null);
+                memberId,
+                userPrincipal.getFullName(),
+                null
+        ));
     }
 
     @Override
@@ -510,8 +521,15 @@ public class ProjectServiceImpl implements ProjectService {
                 .build();
         Label saved = labelRepository.save(label);
 
-        publishProjectActivity(projectId, ActionType.ADD_LABEL, "Đã tạo nhãn",
-                saved.getLabelId(), saved.getName(), null);
+        eventPublisher.publishEvent(new ProjectEvent(
+                saved.getProject(),
+                getCurrentUser(),
+                ActionType.ADD_LABEL,
+                "Đã tạo nhãn",
+                saved.getLabelId(),
+                saved.getName(),
+                null
+        ));
         return LabelResponse.builder()
                 .labelId(saved.getLabelId())
                 .name(saved.getName())
@@ -544,8 +562,11 @@ public class ProjectServiceImpl implements ProjectService {
         if (!changes.isEmpty()) {
             Map<String, Object> metadata = new HashMap<>();
             metadata.put("changes", changes);
-            publishProjectActivity(projectId, ActionType.UPDATE_LABEL,
-                    "Đã cập nhập nhãn", label.getLabelId(), label.getName(), metadata);
+            eventPublisher.publishEvent(new ProjectEvent(
+                    label.getProject(), getCurrentUser(),
+                    ActionType.UPDATE_LABEL, "Đã cập nhập nhãn",
+                    label.getLabelId(), label.getName(), metadata
+            ));
         }
 
         return LabelResponse.builder()
@@ -566,8 +587,11 @@ public class ProjectServiceImpl implements ProjectService {
                                 "Nhãn không tồn tại trong dự án or đã bị xóa")
                 );
         labelRepository.delete(label);
-        publishProjectActivity(projectId, ActionType.DELETE_LABEL, "Đã xóa",
-                label.getLabelId(), label.getName(), null);
+        eventPublisher.publishEvent(new ProjectEvent(
+                label.getProject(), getCurrentUser(),
+                ActionType.DELETE_LABEL, "Đã xóa",
+                label.getLabelId(), label.getName(), null
+        ));
     }
 
     @Override
@@ -585,15 +609,18 @@ public class ProjectServiceImpl implements ProjectService {
                 .status(Status.ACTIVE)
                 .project(project)
                 .build();
-        BoardColumn savedBoardColumn = boardColumnRepository.save(boardColumn);
-        publishProjectActivity(projectId, ActionType.ADD_BOARD_COLUMN, "Đã tạo cột",
-                savedBoardColumn.getBoardColumnId(), savedBoardColumn.getName(), null);
+        BoardColumn saved = boardColumnRepository.save(boardColumn);
+        eventPublisher.publishEvent(new ProjectEvent(
+                saved.getProject(), getCurrentUser(),
+                ActionType.ADD_BOARD_COLUMN, "Đã tạo cột",
+                saved.getBoardColumnId(), saved.getName(), null
+        ));
         return BoardColumnResponse.builder()
-                .name(savedBoardColumn.getName())
-                .sortOrder(savedBoardColumn.getSortOrder())
-                .boardColumnId(savedBoardColumn.getBoardColumnId())
+                .name(saved.getName())
+                .sortOrder(saved.getSortOrder())
+                .boardColumnId(saved.getBoardColumnId())
                 .projectId(projectId)
-                .status(savedBoardColumn.getStatus())
+                .status(saved.getStatus())
                 .build();
     }
 
@@ -616,14 +643,19 @@ public class ProjectServiceImpl implements ProjectService {
             Map<String, Object> metadata = new HashMap<>();
             metadata.put("changes", changes);
 
-            publishProjectActivity(projectId, ActionType.UPDATE_BOARD_COLUMN,
-                    "Đã cập nhập cột", boardColumn.getBoardColumnId(),
-                    boardColumn.getName(), metadata);
+            eventPublisher.publishEvent(new ProjectEvent(
+                    boardColumn.getProject(), getCurrentUser(),
+                    ActionType.UPDATE_BOARD_COLUMN, "Đã cập nhập cột",
+                    boardColumn.getBoardColumnId(), boardColumn.getName(), metadata
+            ));
             boardColumn.setName(name);
         }
         if (sortOrder != null && !sortOrder.isNaN()) {
-            publishProjectActivity(projectId, ActionType.MOVE_BOARD_COLUMN, "Đã di chuyển cột",
-                    boardColumn.getBoardColumnId(), boardColumn.getName(), null);
+            eventPublisher.publishEvent(new ProjectEvent(
+                    boardColumn.getProject(), getCurrentUser(),
+                    ActionType.MOVE_BOARD_COLUMN, "Đã di chuyển cột",
+                    boardColumn.getBoardColumnId(), boardColumn.getName(), null
+            ));
             boardColumn.setSortOrder(sortOrder);
         }
         return BoardColumnResponse.builder()
@@ -645,8 +677,11 @@ public class ProjectServiceImpl implements ProjectService {
                                 "Cột không tồn tại")
                 );
         boardColumnRepository.delete(boardColumn);
-        publishProjectActivity(projectId, ActionType.DELETE_BOARD_COLUMN, "Đã xóa cột",
-                boardColumn.getBoardColumnId(), boardColumn.getName(), null);
+        eventPublisher.publishEvent(new ProjectEvent(
+                boardColumn.getProject(), getCurrentUser(),
+                ActionType.DELETE_BOARD_COLUMN, "Đã xóa cột",
+                boardColumn.getBoardColumnId(), boardColumn.getName(), null
+        ));
     }
 
     @Override
@@ -662,8 +697,11 @@ public class ProjectServiceImpl implements ProjectService {
         boardColumn.setStatus(Status.ARCHIVED);
         boardColumn.setArchivedAt(Instant.now());
         boardColumn.setSortOrder(null);
-        publishProjectActivity(projectId, ActionType.ARCHIVE_BOARD_COLUMN, "Đã lưu trữ cột",
-                boardColumn.getBoardColumnId(), boardColumn.getName(), null);
+        eventPublisher.publishEvent(new ProjectEvent(
+                boardColumn.getProject(), getCurrentUser(),
+                ActionType.ARCHIVE_BOARD_COLUMN, "Đã lưu trữ cột",
+                boardColumn.getBoardColumnId(), boardColumn.getName(), null
+        ));
         return BoardColumnResponse.builder()
                 .name(boardColumn.getName())
                 .sortOrder(boardColumn.getSortOrder())
@@ -693,8 +731,13 @@ public class ProjectServiceImpl implements ProjectService {
         }
         boardColumn.setStatus(Status.ACTIVE);
         boardColumn.setArchivedAt(null);
-        publishProjectActivity(projectId, ActionType.RESTORE_BOARD_COLUMN, "Đã khôi phục cột",
-                boardColumn.getBoardColumnId(), boardColumn.getName(), null);
+
+        eventPublisher.publishEvent(new ProjectEvent(
+                boardColumn.getProject(), getCurrentUser(),
+                ActionType.RESTORE_BOARD_COLUMN, "Đã khôi phục cột",
+                boardColumn.getBoardColumnId(), boardColumn.getName(), null
+        ));
+
         return BoardColumnResponse.builder()
                 .name(boardColumn.getName())
                 .sortOrder(boardColumn.getSortOrder())
@@ -734,28 +777,6 @@ public class ProjectServiceImpl implements ProjectService {
                 .getPrincipal();
     }
 
-    private void publishProjectActivity(String projectId,
-                                        ActionType actionType,
-                                        String description,
-                                        String targetId,
-                                        String targetName,
-                                        Map<String, Object> metadata) {
-        UserPrincipal userCurrent = getCurrentUser();
-
-        ActivityEvent event = ActivityEvent.builder()
-                .projectId(projectId)
-                .actorId(userCurrent.getUserId())
-                .actorName(userCurrent.getFullName())
-                .actorEmail(userCurrent.getEmail())
-                .actionType(actionType)
-                .description(description)
-                .targetId(targetId)
-                .targetName(targetName)
-                .metadata(metadata)
-                .build();
-
-        activityPublisher.publish(event);
-    }
 
     private Map<String, Object> createChangeLog(String field, Object oldValue, Object newValue) {
         Map<String, Object> map = new HashMap<>();
@@ -771,6 +792,7 @@ public class ProjectServiceImpl implements ProjectService {
                 .with(LocalTime.of(23, 59, 59))
                 .toInstant();
     }
+
     private String instantToString(Instant input) {
         if (input == null) return null;
         LocalDateTime dueAt = LocalDateTime.ofInstant(

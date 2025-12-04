@@ -3,15 +3,11 @@ package com.tuanhust.coreservice.service.impl;
 import com.tuanhust.coreservice.client.AuthServiceClient;
 import com.tuanhust.coreservice.config.UserPrincipal;
 import com.tuanhust.coreservice.dto.ActionType;
-import com.tuanhust.coreservice.dto.ActivityEvent;
-import com.tuanhust.coreservice.dto.NotificationEvent;
 import com.tuanhust.coreservice.entity.*;
 import com.tuanhust.coreservice.entity.enums.Status;
-import com.tuanhust.coreservice.entity.ids.ProjectMemberID;
 import com.tuanhust.coreservice.entity.ids.TaskAssigneeId;
 import com.tuanhust.coreservice.entity.ids.TaskLabelId;
-import com.tuanhust.coreservice.publisher.ActivityPublisher;
-import com.tuanhust.coreservice.publisher.NotificationPublisher;
+import com.tuanhust.coreservice.listener.TaskEvent;
 import com.tuanhust.coreservice.repository.*;
 import com.tuanhust.coreservice.request.TaskRequest;
 import com.tuanhust.coreservice.response.CheckListResponse;
@@ -20,9 +16,9 @@ import com.tuanhust.coreservice.response.TaskDetailResponse;
 import com.tuanhust.coreservice.response.TaskResponse;
 import com.tuanhust.coreservice.service.TaskService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -50,15 +46,11 @@ public class TaskServiceImpl implements TaskService {
     private final BoardColumnRepository boardColumnRepository;
     private final ProjectMemberRepository projectMemberRepository;
     private final LabelRepository labelRepository;
-    private final ActivityPublisher activityPublisher;
+    private final ApplicationEventPublisher eventPublisher;
     private final AuthServiceClient authServiceClient;
-    private final NotificationPublisher notificationPublisher;
     private final TaskAssigneeRepository taskAssigneeRepository;
     private final TaskLabelRepository taskLabelRepository;
 
-
-    @Value("${app.frontend-url}")
-    private String frontendUrl;
 
     @Override
     @Transactional
@@ -118,57 +110,25 @@ public class TaskServiceImpl implements TaskService {
             task.setTaskLabels(labels);
         }
         Task savedTask = taskRepository.save(task);
-
-        publishTaskActivity(projectId, savedTask.getTaskId(), ActionType.CREATE_TASK,
-                "Đã tạo nhiệm vụ", savedTask.getTaskId(), savedTask.getTitle(), null);
-
         List<ProjectMember> assignees = projectMemberRepository.findByMemberIdInAndProjectId(
                 taskRequest.getAssigneeIds()
                         .stream()
                         .filter(a -> !a.equals(creator.getUserId())).toList()
                 , projectId);
+        eventPublisher.publishEvent(new TaskEvent(
+                savedTask,
+                projectId,
+                creator,
+                ActionType.CREATE_TASK,
+                "Đã tạo nhiệm vụ",
+                savedTask.getTaskId(),
+                savedTask.getTitle(),
+                null,
+                Map.of("assignees", assignees)
+        ));
 
-        String taskLink = frontendUrl + "/projects/" + projectId + "/kanban?taskId=" + savedTask.getTaskId();
-        Map<String, Object> props = new HashMap<>();
-        props.put("template", "email_add_assignee_task");
-        props.put("creatorId", creator.getUserId());
-        props.put("creatorName", creator.getFullName());
-        props.put("titleTask", savedTask.getTitle());
-        props.put("projectName", project.getName());
-        props.put("priority", savedTask.getPriority());
-        props.put("type", "ASSIGN_TASK");
-        if (savedTask.getDueAt() != null) {
-            LocalDateTime dueAt = LocalDateTime.ofInstant(
-                    savedTask.getDueAt(),
-                    ZoneId.systemDefault()
-            );
-            props.put("dueAt", dueAt.toString());
-        }
-        props.put("link", taskLink);
-        assignees.forEach(a -> {
-            NotificationEvent event = NotificationEvent.builder()
-                    .channel("ALL")
-                    .recipientId(a.getMemberId())
-                    .recipient(a.getEmail())
-                    .subject("Bạn đã được thêm vào 1 nhiệm vụ")
-                    .properties(props)
-                    .build();
-            notificationPublisher.publish(event);
-        });
-        return TaskResponse.builder()
-                .projectId(projectId)
-                .taskId(savedTask.getTaskId())
-                .title(savedTask.getTitle())
-                .priority(savedTask.getPriority())
-                .dueAt(savedTask.getDueAt())
-                .completed(savedTask.getCompleted())
-                .sortOrder(savedTask.getSortOrder())
-                .status(savedTask.getStatus())
-                .boardColumnId(taskRequest.getBoardColumnId())
-                .creatorId(savedTask.getCreatorId())
-                .assigneeIds(taskRequest.getAssigneeIds())
-                .labelIds(taskRequest.getLabelIds())
-                .build();
+
+        return maptoTaskResponse(savedTask);
     }
 
     @Override
@@ -192,9 +152,16 @@ public class TaskServiceImpl implements TaskService {
         task.setSortOrder(null);
         task.setArchivedAt(Instant.now());
 
-        publishTaskActivity(projectId, task.getTaskId(), ActionType.ARCHIVE_TASK,
+        eventPublisher.publishEvent(new TaskEvent(
+                task,
+                projectId,
+                getCurrentUser(),
+                ActionType.ARCHIVE_TASK,
                 "Đã lưu trữ nhiệm vụ",
-                task.getTaskId(), task.getTitle(), null);
+                task.getTaskId(),
+                task.getTitle(),
+                null
+        ));
         return maptoTaskResponse(task);
     }
 
@@ -215,9 +182,16 @@ public class TaskServiceImpl implements TaskService {
         } else {
             task.setSortOrder(sortOrder);
         }
-        publishTaskActivity(projectId, task.getTaskId(), ActionType.RESTORE_TASK,
+        eventPublisher.publishEvent(new TaskEvent(
+                task,
+                projectId,
+                getCurrentUser(),
+                ActionType.RESTORE_TASK,
                 "Đã khôi phục nhiệm vụ",
-                task.getTaskId(), task.getTitle(), null);
+                task.getTaskId(),
+                task.getTitle(),
+                null
+        ));
         return maptoTaskResponse(task);
     }
 
@@ -230,8 +204,16 @@ public class TaskServiceImpl implements TaskService {
                         () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nhiệm vụ không tồn tại")
                 );
         taskRepository.delete(task);
-        publishTaskActivity(projectId, taskId, ActionType.DELETE_TASK,
-                "Đã xóa nhiệm vụ", taskId, task.getTitle(), null);
+        eventPublisher.publishEvent(new TaskEvent(
+                task,
+                projectId,
+                getCurrentUser(),
+                ActionType.DELETE_TASK,
+                "Đã xóa nhiệm vụ",
+                taskId,
+                task.getTitle(),
+                null
+        ));
     }
 
     @Override
@@ -255,9 +237,16 @@ public class TaskServiceImpl implements TaskService {
         task.setSortOrder(sortOrder);
 
         String description = "Đã di chuyển nhiệm vụ";
-        publishTaskActivity(projectId, task.getTaskId(), ActionType.MOVE_TASK,
+        eventPublisher.publishEvent(new TaskEvent(
+                task,
+                projectId,
+                getCurrentUser(),
+                ActionType.MOVE_TASK,
                 description,
-                task.getTaskId(), task.getTitle(), metadata);
+                task.getTaskId(),
+                task.getTitle(),
+                metadata
+        ));
         return maptoTaskResponse(task);
     }
 
@@ -349,8 +338,16 @@ public class TaskServiceImpl implements TaskService {
         if (!changes.isEmpty()) {
             Map<String, Object> metadata = Map.of("changes", changes);
             String des = "Đã cập nhập nhiệm vụ";
-            publishTaskActivity(projectId, taskId, ActionType.UPDATE_TASK, des,
-                    taskId, task.getTitle(), metadata);
+            eventPublisher.publishEvent(new TaskEvent(
+                    task,
+                    projectId,
+                    getCurrentUser(),
+                    ActionType.UPDATE_TASK,
+                    des,
+                    task.getTaskId(),
+                    task.getTitle(),
+                    metadata
+            ));
         }
     }
 
@@ -371,33 +368,20 @@ public class TaskServiceImpl implements TaskService {
                 .build();
         taskAssigneeRepository.save(taskAssignee);
 
-        publishTaskActivity(projectId, taskId, ActionType.ADD_MEMBER_TASK,
+        eventPublisher.publishEvent(new TaskEvent(
+                task,
+                projectId,
+                getCurrentUser(),
+                ActionType.ADD_MEMBER_TASK,
                 "Đã thêm " + assignee.getFullName() + " vào nhiệm vụ",
-                taskId, task.getTitle(), null);
-        if (!assignee.getUserId().equals(getCurrentUser().getUserId())) {
-            String taskLink = frontendUrl + "/projects/" + projectId + "/kanban?taskId=" + taskId;
-            Map<String, Object> props = new HashMap<>();
-            props.put("template", "email_add_assignee_task");
-            props.put("creatorId", getCurrentUser().getUserId());
-            props.put("creatorName", getCurrentUser().getFullName());
-            props.put("titleTask", task.getTitle());
-            props.put("projectName", task.getProject().getName());
-            props.put("priority", task.getPriority());
-            props.put("type", "ASSIGN_TASK");
-
-            if (task.getDueAt() != null) {
-                props.put("dueAt", instantToString(task.getDueAt()));
-            }
-            props.put("link", taskLink);
-            NotificationEvent event = NotificationEvent.builder()
-                    .channel("ALL")
-                    .recipient(assignee.getEmail())
-                    .recipientId(assigneeId)
-                    .subject("Bạn đã được thêm vào 1 nhiệm vụ")
-                    .properties(props)
-                    .build();
-            notificationPublisher.publish(event);
-        }
+                task.getTaskId(),
+                task.getTitle(),
+                null,
+                Map.of("assignees", ProjectMember.builder()
+                        .memberId(assigneeId)
+                        .email(assignee.getEmail())
+                        .build())
+        ));
     }
 
     @Override
@@ -408,29 +392,20 @@ public class TaskServiceImpl implements TaskService {
                 .findById(new TaskAssigneeId(assigneeId, taskId))
                 .orElseThrow();
         taskAssigneeRepository.delete(taskAssignee);
+
         UserPrincipal assignee = authServiceClient.getUsers(List.of(assigneeId)).getFirst();
         if (assignee != null) {
-            publishTaskActivity(projectId, taskId, ActionType.DELETE_MEMBER_TASK,
+            eventPublisher.publishEvent(new TaskEvent(
+                    taskAssignee.getTask(),
+                    projectId,
+                    getCurrentUser(),
+                    ActionType.DELETE_MEMBER_TASK,
                     "Đã xóa " + assignee.getFullName() + " ra khỏi nhiệm vụ",
-                    taskId, taskAssignee.getTask().getTitle(), null);
-
-            if (!assignee.getUserId().equals(getCurrentUser().getUserId())) {
-                Map<String, Object> props = new HashMap<>();
-                props.put("template", "email_delete_assignee_task");
-                props.put("recipientName", assignee.getFullName());
-                props.put("creatorName", getCurrentUser().getFullName());
-                props.put("taskTitle", taskAssignee.getTask().getTitle());
-                props.put("projectName", taskAssignee.getTask().getProject().getName());
-                props.put("type", "REMOVE_ASSIGNEE_TASK");
-                NotificationEvent event = NotificationEvent.builder()
-                        .channel("ALL")
-                        .recipient(assignee.getEmail())
-                        .recipientId(assigneeId)
-                        .subject("Bạn đã được xóa khỏi 1 nhiệm vụ")
-                        .properties(props)
-                        .build();
-                notificationPublisher.publish(event);
-            }
+                    taskId,
+                    taskAssignee.getTask().getTitle(),
+                    null,
+                    Map.of("assignee", assignee)
+            ));
         }
 
     }
@@ -448,9 +423,16 @@ public class TaskServiceImpl implements TaskService {
                 .label(label)
                 .build();
         taskLabelRepository.save(taskLabel);
-        publishTaskActivity(projectId, taskId, ActionType.ADD_LABEL_TASK,
+        eventPublisher.publishEvent(new TaskEvent(
+                task,
+                projectId,
+                getCurrentUser(),
+                ActionType.ADD_LABEL_TASK,
                 "Đã thêm nhãn " + label.getName() + " vào nhiệm vụ",
-                taskId, task.getTitle(), null);
+                task.getTaskId(),
+                task.getTitle(),
+                null
+        ));
     }
 
     @Override
@@ -459,9 +441,16 @@ public class TaskServiceImpl implements TaskService {
     public void deleteLabelTask(String projectId, String taskId, String labelId) {
         TaskLabel taskLabel = taskLabelRepository.findById(new TaskLabelId(taskId, labelId)).orElseThrow();
         taskLabelRepository.delete(taskLabel);
-        publishTaskActivity(projectId, taskId, ActionType.DELETE_LABEL_TASK,
+        eventPublisher.publishEvent(new TaskEvent(
+                taskLabel.getTask(),
+                projectId,
+                getCurrentUser(),
+                ActionType.DELETE_LABEL_TASK,
                 "Đã xóa nhãn " + taskLabel.getLabel().getName() + " khỏi nhiệm vụ",
-                taskId, taskLabel.getTask().getTitle(), null);
+                taskId,
+                taskLabel.getTask().getTitle(),
+                null
+        ));
     }
 
     @Override
@@ -473,13 +462,17 @@ public class TaskServiceImpl implements TaskService {
         );
         task.setCompleted(completed);
         if (completed) {
-            publishTaskActivity(projectId, taskId, ActionType.COMPLETE_TASK,
+            eventPublisher.publishEvent(new TaskEvent(
+                    task, projectId, getCurrentUser(), ActionType.COMPLETE_TASK,
                     "Đã hoàn thành nhiệm vu",
-                    taskId, task.getTitle(), null);
+                    task.getTaskId(), task.getTitle(), null
+            ));
         } else {
-            publishTaskActivity(projectId, taskId, ActionType.INCOMPLETE_TASK,
+            eventPublisher.publishEvent(new TaskEvent(
+                    task, projectId, getCurrentUser(), ActionType.INCOMPLETE_TASK,
                     "Đã đánh dấu chưa hoàn thành nhiệm vu",
-                    taskId, task.getTitle(), null);
+                    task.getTaskId(), task.getTitle(), null
+            ));
         }
     }
 
@@ -497,9 +490,16 @@ public class TaskServiceImpl implements TaskService {
                 .body(body)
                 .build();
         CheckList savedCheckList = checkListRepository.save(checkList);
-        publishTaskActivity(projectId, taskId, ActionType.ADD_CHECKLIST,
+        eventPublisher.publishEvent(new TaskEvent(
+                task,
+                projectId,
+                getCurrentUser(),
+                ActionType.ADD_CHECKLIST,
                 "Đã tạo công việc mới",
-                savedCheckList.getCheckListId(), savedCheckList.getBody(), null);
+                savedCheckList.getCheckListId(),
+                savedCheckList.getBody(),
+                null
+        ));
         return CheckListResponse.builder()
                 .taskId(taskId)
                 .checkListId(savedCheckList.getCheckListId())
@@ -519,13 +519,23 @@ public class TaskServiceImpl implements TaskService {
         if (done != null && checkList.isDone() != done) {
             checkList.setDone(done);
             if (done) {
-                publishTaskActivity(projectId, taskId, ActionType.COMPLETE_CHECKLIST,
+                eventPublisher.publishEvent(new TaskEvent(
+                        checkList.getTask(), projectId, getCurrentUser(),
+                        ActionType.COMPLETE_CHECKLIST,
                         "Đã hoàn thành công việc",
-                        checkListId, checkList.getBody(), null);
+                        checkListId,
+                        checkList.getBody(),
+                        null
+                ));
             } else {
-                publishTaskActivity(projectId, taskId, ActionType.INCOMPLETE_CHECKLIST,
+                eventPublisher.publishEvent(new TaskEvent(
+                        checkList.getTask(), projectId, getCurrentUser(),
+                        ActionType.INCOMPLETE_CHECKLIST,
                         "Đã đánh dấu chưa hoàn thành công việc",
-                        checkListId, checkList.getBody(), null);
+                        checkListId,
+                        checkList.getBody(),
+                        null
+                ));
             }
         }
         return CheckListResponse.builder()
@@ -545,9 +555,14 @@ public class TaskServiceImpl implements TaskService {
     public void deleteCheckList(String projectId, String taskId, String checkListId) {
         CheckList checkList = checkListRepository.findById(checkListId).orElseThrow();
         checkListRepository.delete(checkList);
-        publishTaskActivity(projectId, taskId, ActionType.DELETE_CHECKLIST,
+        eventPublisher.publishEvent(new TaskEvent(
+                checkList.getTask(), projectId, getCurrentUser(),
+                ActionType.DELETE_CHECKLIST,
                 "Đã xóa công việc",
-                checkListId, checkList.getBody(), null);
+                checkListId,
+                checkList.getBody(),
+                null
+        ));
     }
 
     @Override
@@ -572,10 +587,17 @@ public class TaskServiceImpl implements TaskService {
         comment.setCommentMentions(commentMentions);
         Comment savedComment = commentRepository.save(comment);
 
-        publishTaskActivity(projectId, taskId, ActionType.ADD_COMMENT,
-                "Đã thêm 1 bình luận", savedComment.getCommentId(), null, null);
-
-        pushNotificationMention(projectId, taskId, commentMentions);
+        eventPublisher.publishEvent(new TaskEvent(
+                task,
+                projectId,
+                getCurrentUser(),
+                ActionType.ADD_COMMENT,
+                "Đã thêm 1 bình luận",
+                savedComment.getCommentId(),
+                savedComment.getBody(),
+                null,
+                Map.of("commentMentions", commentMentions)
+        ));
 
 
         return CommentResponse.builder()
@@ -596,8 +618,14 @@ public class TaskServiceImpl implements TaskService {
         Comment comment = commentRepository.findById(commentId).orElseThrow();
         if (Objects.equals(comment.getCreatorId(), getCurrentUser().getUserId())) {
             commentRepository.delete(comment);
-            publishTaskActivity(projectId, taskId, ActionType.DELETE_COMMENT,
-                    "Đã xóa 1 bình luận", comment.getCommentId(), null, null);
+            eventPublisher.publishEvent(new TaskEvent(
+                    comment.getTask(), projectId, getCurrentUser(),
+                    ActionType.DELETE_COMMENT,
+                    "Đã xóa 1 bình luận",
+                    comment.getCommentId(),
+                    null,
+                    null
+            ));
         } else {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Bạn ko có quyền");
         }
@@ -630,10 +658,17 @@ public class TaskServiceImpl implements TaskService {
             comment.setBody(body);
             comment.setUpdatedAt(Instant.now());
 
-            pushNotificationMention(projectId, taskId, commentMentions);
-
-            publishTaskActivity(projectId, taskId, ActionType.UPDATE_COMMENT,
-                    "Đã chỉnh sửa 1 bình luận", comment.getCommentId(), null, metadata);
+            eventPublisher.publishEvent(new TaskEvent(
+                    comment.getTask(),
+                    projectId,
+                    getCurrentUser(),
+                    ActionType.UPDATE_COMMENT,
+                    "Đã chỉnh sửa 1 bình luận",
+                    comment.getCommentId(),
+                    null,
+                    metadata,
+                    Map.of("commentMentions", commentMentions)
+            ));
         }
 
 
@@ -649,7 +684,6 @@ public class TaskServiceImpl implements TaskService {
                 .updatedAt(comment.getUpdatedAt())
                 .build();
     }
-
 
 
     @Override
@@ -710,29 +744,6 @@ public class TaskServiceImpl implements TaskService {
         return new ArrayList<>(userIds);
     }
 
-    private void publishTaskActivity(String projectId, String taskId,
-                                     ActionType actionType,
-                                     String description,
-                                     String targetId,
-                                     String targetName,
-                                     Map<String, ?> metadata) {
-        UserPrincipal userCurrent = getCurrentUser();
-
-        ActivityEvent event = ActivityEvent.builder()
-                .taskId(taskId)
-                .projectId(projectId)
-                .actorId(userCurrent.getUserId())
-                .actorName(userCurrent.getFullName())
-                .actorEmail(userCurrent.getEmail())
-                .actionType(actionType)
-                .description(description)
-                .targetId(targetId)
-                .targetName(targetName)
-                .metadata(metadata)
-                .build();
-
-        activityPublisher.publish(event);
-    }
 
     private Map<String, Object> createChangeLog(String field, Object oldValue, Object newValue) {
         Map<String, Object> map = new HashMap<>();
@@ -757,26 +768,5 @@ public class TaskServiceImpl implements TaskService {
         );
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         return dueAt.format(formatter);
-    }
-
-    private void pushNotificationMention(String projectId, String taskId, Set<CommentMentions> commentMentions) {
-        String taskLink = frontendUrl + "/projects/" + projectId + "/kanban?taskId=" + taskId;
-        commentMentions.stream()
-                .filter(c ->
-                        !c.getMentionId().equals(getCurrentUser().getUserId()))
-                .forEach(c -> {
-                    Map<String,Object> props = new HashMap<>();
-                    props.put("link", taskLink);
-                    props.put("creatorId", getCurrentUser().getUserId());
-                    props.put("creatorName", getCurrentUser().getFullName());
-                    props.put("type", "MENTION");
-                    NotificationEvent event = NotificationEvent.builder()
-                            .channel("IN_APP")
-                            .content("Đã nhắc đến bạn trong 1 bình luận")
-                            .recipientId(c.getMentionId())
-                            .properties(props)
-                            .build();
-                    notificationPublisher.publish(event);
-                });
     }
 }
