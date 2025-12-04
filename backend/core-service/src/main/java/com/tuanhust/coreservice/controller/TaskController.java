@@ -107,6 +107,46 @@ public class TaskController {
         return ResponseEntity.ok(ApiResponse.success("updated", null));
     }
 
+    @PutMapping("/{taskId}/assignees")
+    @ProjectRoles(roles = {"OWNER", "EDITOR"})
+    public ResponseEntity<ApiResponse<Void>> addAssigneeTask(
+            @PathVariable String projectId,
+            @PathVariable String taskId,
+            @RequestParam String assigneeId){
+        taskService.addAssigneeTask(projectId,taskId,assigneeId);
+        return ResponseEntity.ok(ApiResponse.success("updated", null));
+    }
+
+    @DeleteMapping("/{taskId}/assignees")
+    @ProjectRoles(roles = {"OWNER", "EDITOR"})
+    public ResponseEntity<ApiResponse<Void>> deleteAssigneeTask(
+            @PathVariable String projectId,
+            @PathVariable String taskId,
+            @RequestParam String assigneeId){
+        taskService.deleteAssigneeTask(projectId,taskId,assigneeId);
+        return ResponseEntity.ok(ApiResponse.success("deleted", null));
+    }
+
+    @PutMapping("/{taskId}/labels")
+    @ProjectRoles(roles = {"OWNER", "EDITOR"})
+    public ResponseEntity<ApiResponse<Void>> addLabelTask(
+            @PathVariable String projectId,
+            @PathVariable String taskId,
+            @RequestParam String labelId){
+        taskService.addLabelTask(projectId,taskId,labelId);
+        return ResponseEntity.ok(ApiResponse.success("updated", null));
+    }
+
+    @DeleteMapping("/{taskId}/labels")
+    @ProjectRoles(roles = {"OWNER", "EDITOR"})
+    public ResponseEntity<ApiResponse<Void>> deleteLabelTask(
+            @PathVariable String projectId,
+            @PathVariable String taskId,
+            @RequestParam String labelId){
+        taskService.deleteLabelTask(projectId,taskId,labelId);
+        return ResponseEntity.ok(ApiResponse.success("deleted", null));
+    }
+
     @PutMapping("/{taskId}/complete")
     @ProjectRoles(roles = {"OWNER", "EDITOR", "COMMENTER"})
     public ResponseEntity<ApiResponse<Void>> updateCompletedTask(

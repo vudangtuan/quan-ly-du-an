@@ -39,8 +39,10 @@ import org.springframework.web.server.ResponseStatusException;
 
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -94,6 +96,7 @@ public class ProjectServiceImpl implements ProjectService {
         members.add(ProjectMember.builder()
                 .project(project)
                 .role(Role.OWNER)
+                .email(userCurrent.getEmail())
                 .memberId(currentUserId)
                 .build());
         project.setMembers(members);
@@ -176,8 +179,8 @@ public class ProjectServiceImpl implements ProjectService {
         }
 
         if (!Objects.equals(project.getDueAt(), request.getDueAt())) {
-            changes.add(createChangeLog("Hạn chót", project.getDueAt(),
-                    normalizeToEndOfDay(request.getDueAt())));
+            changes.add(createChangeLog("Hạn chót", instantToString(project.getDueAt()),
+                    instantToString(normalizeToEndOfDay(request.getDueAt()))));
 
             project.setDueAt(normalizeToEndOfDay(request.getDueAt()));
         }
@@ -275,7 +278,7 @@ public class ProjectServiceImpl implements ProjectService {
                 .map(pm -> ProjectMemberResponse.builder()
                         .roleInProject(pm.getRole())
                         .joinAt(pm.getJoinedAt())
-                        .email(mapUser.get(pm.getMemberId()).getEmail())
+                        .email(pm.getEmail())
                         .userId(pm.getMemberId())
                         .fullName(mapUser.get(pm.getMemberId()).getFullName())
                         .projectId(pm.getProjectId())
@@ -369,38 +372,44 @@ public class ProjectServiceImpl implements ProjectService {
         }
         if (role == Role.EDITOR || role == Role.VIEWER || role == Role.COMMENTER) {
             UserPrincipal currentUser = getCurrentUser();
-            UserPrincipal invitedUser = authClient.getUsers(List.of(request.getMemberId()))
+            UserPrincipal recipientUser = authClient.getUsers(List.of(request.getMemberId()))
                     .stream().findFirst().orElseThrow(() -> new ResponseStatusException(
                             HttpStatus.BAD_REQUEST, "User không tồn tại"));
             String token = UUID.randomUUID().toString();
             InvitationData invitation = InvitationData.builder()
                     .projectId(request.getProjectId())
                     .memberId(request.getMemberId())
+                    .emailMember(recipientUser.getEmail())
+                    .memberName(recipientUser.getFullName())
                     .role(request.getRole())
                     .inviterId(currentUser.getUserId())
+                    .inviterName(currentUser.getFullName())
                     .build();
             String redisKey = "invitation:" + token;
 
             String inviteLink = frontendUrl + "/accept-invite?token=" + token;
 
-            Map<String, Object> emailProps = new HashMap<>();
-            emailProps.put("template", "email-invite");
-            emailProps.put("recipientName", invitedUser.getFullName());
-            emailProps.put("inviterName", currentUser.getFullName());
-            emailProps.put("projectName", project.getName());
-            emailProps.put("role", request.getRole().toString());
-            emailProps.put("expiryDays", 7);
-            emailProps.put("inviteLink", inviteLink);
+            Map<String, Object> props = new HashMap<>();
+            props.put("template", "email-invite");
+            props.put("recipientName", recipientUser.getFullName());
+            props.put("creatorName", currentUser.getFullName());
+            props.put("creatorId", currentUser.getUserId());
+            props.put("projectName", project.getName());
+            props.put("role", request.getRole().toString());
+            props.put("expiryDays", 7);
+            props.put("type", "INVITE_MEMBER");
+            props.put("link", inviteLink);
 
-            NotificationEvent emailEvent = NotificationEvent.builder()
-                    .channel("EMAIL")
-                    .recipient(invitedUser.getEmail())
+            NotificationEvent event = NotificationEvent.builder()
+                    .channel("ALL")
+                    .recipient(recipientUser.getEmail())
+                    .recipientId(recipientUser.getUserId())
                     .subject("Lời mời tham gia dự án: " + project.getName())
                     .content("Bạn nhận được lời mời tham gia dự án.")
-                    .properties(emailProps)
+                    .properties(props)
                     .build();
 
-            notificationPublisher.publish(emailEvent);
+            notificationPublisher.publish(event);
 
             redisTemplate.opsForValue().set(redisKey, invitation, 7, TimeUnit.DAYS);
             redisTemplate.opsForValue().set(pendingKey, token, 7, TimeUnit.DAYS);
@@ -430,20 +439,19 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = projectRepository.findById(invitation.getProjectId())
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Dự án không tồn tại"));
+
+
         ProjectMember projectMember = ProjectMember.builder()
                 .memberId(invitation.getMemberId())
                 .project(project)
+                .email(invitation.getEmailMember())
                 .role(invitation.getRole())
                 .build();
         ProjectMember saved = projectMemberRepository.save(projectMember);
 
-
-        UserPrincipal invitedUser = authClient.getUsers(
-                List.of(invitation.getInviterId())).getFirst();
-
         publishProjectActivity(project.getProjectId(), ActionType.ADD_MEMBER,
                 "Đã tham gia dự án qua lời mời",
-                project.getProjectId(), invitedUser.getFullName(), null);
+                project.getProjectId(), invitation.getInviterName(), null);
 
         redisTemplate.delete(tokenKey);
         redisTemplate.delete(pendingKey);
@@ -451,8 +459,8 @@ public class ProjectServiceImpl implements ProjectService {
         return ProjectMemberResponse.builder()
                 .projectId(project.getProjectId())
                 .userId(saved.getMemberId())
-                .email(invitedUser.getEmail())
-                .fullName(invitedUser.getFullName())
+                .email(saved.getEmail())
+                .fullName(invitation.getMemberName())
                 .roleInProject(saved.getRole())
                 .build();
     }
@@ -698,7 +706,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional(readOnly = true)
-    public PaginatedResponse<ArchivedItemResponse> getArchivedItem(String projectId,Pageable pageable) {
+    public PaginatedResponse<ArchivedItemResponse> getArchivedItem(String projectId, Pageable pageable) {
         Page<ArchivedItemResponse> page = projectRepository.findArchivedByProjectId(projectId, pageable);
         return PaginatedResponse.<ArchivedItemResponse>builder()
                 .content(page.getContent())
@@ -760,7 +768,16 @@ public class ProjectServiceImpl implements ProjectService {
     private Instant normalizeToEndOfDay(Instant input) {
         if (input == null) return null;
         return input.atZone(ZoneId.systemDefault())
-                .with(LocalTime.of(23,59,59))
+                .with(LocalTime.of(23, 59, 59))
                 .toInstant();
+    }
+    private String instantToString(Instant input) {
+        if (input == null) return null;
+        LocalDateTime dueAt = LocalDateTime.ofInstant(
+                input,
+                ZoneId.systemDefault()
+        );
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        return dueAt.format(formatter);
     }
 }

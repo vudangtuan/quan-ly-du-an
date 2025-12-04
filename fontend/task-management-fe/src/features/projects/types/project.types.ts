@@ -126,3 +126,14 @@ export interface ArchivedItemResponse {
     type: string;
     archivedAt: string;
 }
+
+export interface Notification{
+    id: string;
+    recipientId:string;
+    subject:string;
+    content:string;
+    isRead:boolean;
+    properties:Record<string, any>;
+    createdAt:string;
+}
+

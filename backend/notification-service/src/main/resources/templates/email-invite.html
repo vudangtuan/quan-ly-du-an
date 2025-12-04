@@ -49,7 +49,7 @@
                 <div class="greeting">Xin chào <span th:text="${recipientName}">Người dùng</span>,</div>
 
                 <div class="text">
-                    <strong th:text="${inviterName}">Admin</strong> vừa mời bạn tham gia vào một dự án trên hệ thống quản lý công việc TaskFlow.
+                    <strong th:text="${creatorName}">Admin</strong> vừa mời bạn tham gia vào một dự án trên hệ thống quản lý công việc TaskFlow.
                 </div>
 
                 <div class="project-card">
@@ -68,7 +68,7 @@
                 </div>
 
                 <div class="btn-container">
-                    <a th:href="${inviteLink}" class="btn" target="_blank">Chấp nhận lời mời</a>
+                    <a th:href="${link}" class="btn" target="_blank">Chấp nhận lời mời</a>
                     <p style="font-size: 13px; color: #de350b; margin-top: 12px; font-style: italic;">
                         ⚠️ Link này có hiệu lực trong <span th:text="${expiryDays}">7</span> ngày.
                     </p>

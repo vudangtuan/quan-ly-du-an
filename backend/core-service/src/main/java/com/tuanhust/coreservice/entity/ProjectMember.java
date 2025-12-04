@@ -44,4 +44,7 @@ public class ProjectMember {
     private Role role;
     @CreatedDate
     private Instant joinedAt;
+
+    @Column(nullable = false)
+    private String email;
 }

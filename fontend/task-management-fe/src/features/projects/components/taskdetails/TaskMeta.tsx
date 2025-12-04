@@ -1,4 +1,3 @@
-// components/TaskDetailModal/TaskMeta.tsx
 import React, {useEffect, useState} from "react";
 import {Plus, Tag, User} from "lucide-react";
 import * as Popover from "@radix-ui/react-popover";
@@ -6,16 +5,18 @@ import {Label} from "@components/Label";
 import {Avatar} from "@components/Avatar";
 import {LabelResponse, ProjectDetailResponse, ProjectMemberResponse} from "@features/projects/types/project.types";
 import {TaskDetailResponse} from "@features/projects/types/task.types";
+import {useMutation} from "@tanstack/react-query";
+import {TaskService} from "@features/projects/services/TaskService";
+import toast from "react-hot-toast";
 
 interface TaskMetaProps {
     task: TaskDetailResponse;
     project: ProjectDetailResponse;
     canManage: boolean;
-    updateTask: (data: any) => void;
     isError: boolean;
 }
 
-export const TaskMeta: React.FC<TaskMetaProps> = ({task, project, canManage, updateTask,isError}) => {
+export const TaskMeta: React.FC<TaskMetaProps> = ({task, project, canManage, isError}) => {
     const [labels, setLabels] = useState<LabelResponse[]>([]);
     const [assignees, setAssignees] = useState<ProjectMemberResponse[]>([]);
 
@@ -24,34 +25,61 @@ export const TaskMeta: React.FC<TaskMetaProps> = ({task, project, canManage, upd
             setLabels(project.labels.filter((label: LabelResponse) =>
                 task.labelIds.includes(label.labelId)));
         }
-    }, [task, project.labels,isError]);
+    }, [task, project.labels, isError]);
 
     useEffect(() => {
         if ((task && project.members) || isError) {
             setAssignees(project.members.filter((m) =>
                 task.assigneeIds.includes(m.userId)));
         }
-    }, [task, project.members,isError]);
+    }, [task, project.members, isError]);
 
-    const handleSaveLabel = (l: LabelResponse) => {
-        const newLabels = [...labels, l];
-        updateTask({labelIds: newLabels.map(l => l.labelId)});
-    };
+    const addAssigneeMutation = useMutation({
+        mutationFn: (assignee: ProjectMemberResponse) =>
+            TaskService.addAssigneeTask(project.projectId, task.taskId, assignee.userId),
+        onSuccess: (_, variables) => {
+            const newAssigns = [...assignees, variables];
+            setAssignees(newAssigns);
+        },
+        onError: (e) => {
+            toast.error(e.message);
+        }
+    });
+    const deleteAssigneeMutation = useMutation({
+        mutationFn: (assignee: ProjectMemberResponse) =>
+            TaskService.deleteAssigneeTask(project.projectId, task.taskId, assignee.userId),
+        onSuccess: (_, variables) => {
+            const newAssigns = assignees.filter(m => m.userId !== variables.userId);
+            setAssignees(newAssigns);
+        },
+        onError: (e) => {
+            toast.error(e.message);
+        }
+    });
 
-    const handleRemoveLabel = (l: LabelResponse) => {
-        const newLabels = labels.filter(la => la.labelId !== l.labelId);
-        updateTask({labelIds: newLabels.map(l => l.labelId)});
-    };
-
-    const handleSaveMembers = (member: ProjectMemberResponse) => {
-        const newAssigns = [...assignees, member];
-        updateTask({assigneeIds: newAssigns.map(m => m.userId)});
-    };
-
-    const handleRemoveMembers = (member: ProjectMemberResponse) => {
-        const newAssigns = assignees.filter(m => m.userId !== member.userId);
-        updateTask({assigneeIds: newAssigns.map(m => m.userId)});
-    };
+    const addLabelMutation = useMutation({
+        mutationFn: (label: LabelResponse) =>
+            TaskService.addLabelTask(project.projectId, task.taskId, label.labelId),
+        onSuccess: (_, variables) => {
+            const newLabels = [...labels, variables];
+            setLabels(newLabels);
+        },
+        onError: (e) => {
+            toast.error(e.message);
+        }
+    })
+    const deleteLabelMutation = useMutation({
+        mutationFn: (label: LabelResponse) =>
+            TaskService.deleteLabelTask(project.projectId, task.taskId, label.labelId),
+        onSuccess: (_, variables) => {
+            const newLabels =
+                labels.filter(la => la.labelId !== variables.labelId);
+            setLabels(newLabels);
+        },
+        onError: (e) => {
+            toast.error(e.message);
+        }
+    })
 
     return (
         <div className="flex items-center gap-5">
@@ -86,9 +114,9 @@ export const TaskMeta: React.FC<TaskMetaProps> = ({task, project, canManage, upd
                                         type="button"
                                         onClick={() => {
                                             if (isSelected) {
-                                                handleRemoveLabel(l);
+                                                deleteLabelMutation.mutate(l);
                                             } else {
-                                                handleSaveLabel(l);
+                                                addLabelMutation.mutate(l);
                                             }
                                         }}
                                         className="w-full flex items-center gap-1 px-3 py-2 text-sm
@@ -101,8 +129,10 @@ export const TaskMeta: React.FC<TaskMetaProps> = ({task, project, canManage, upd
                                                 : 'border-gray-300'
                                         }`}>
                                             {isSelected && (
-                                                <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7"/>
+                                                <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24"
+                                                     stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3}
+                                                          d="M5 13l4 4L19 7"/>
                                                 </svg>
                                             )}
                                         </div>
@@ -119,8 +149,10 @@ export const TaskMeta: React.FC<TaskMetaProps> = ({task, project, canManage, upd
             <div className="space-y-2">
                 <div className="flex items-center gap-2 group">
                     <div className="flex -space-x-2">
-                        {project.members.filter(m => task.assigneeIds.includes(m.userId)).map(m => (
-                            <Avatar key={m.userId} fullname={m.fullName} className="h-6 w-6 ring-2 ring-white rounded-full"/>
+                        {project.members.filter((m: ProjectMemberResponse) =>
+                            task.assigneeIds.includes(m.userId)).map((m: ProjectMemberResponse) => (
+                            <Avatar key={m.userId} fullname={m.fullName}
+                                    className="h-6 w-6 ring-2 ring-white rounded-full"/>
                         ))}
                     </div>
                     <Popover.Root modal={true}>
@@ -152,9 +184,9 @@ export const TaskMeta: React.FC<TaskMetaProps> = ({task, project, canManage, upd
                                                     type="button"
                                                     onClick={() => {
                                                         if (isAssigned) {
-                                                            handleRemoveMembers(member);
+                                                            deleteAssigneeMutation.mutate(member);
                                                         } else {
-                                                            handleSaveMembers(member);
+                                                            addAssigneeMutation.mutate(member)
                                                         }
                                                     }}
                                                     className="w-full flex items-center gap-2 px-3 py-2 text-sm
@@ -167,14 +199,17 @@ export const TaskMeta: React.FC<TaskMetaProps> = ({task, project, canManage, upd
                                                             : 'border-gray-300'
                                                     }`}>
                                                         {isAssigned && (
-                                                            <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7"/>
+                                                            <svg className="w-3 h-3 text-white" fill="none"
+                                                                 viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round"
+                                                                      strokeWidth={3} d="M5 13l4 4L19 7"/>
                                                             </svg>
                                                         )}
                                                     </div>
                                                     <Avatar fullname={member.fullName} className="h-6 w-6"/>
                                                     <div className="flex-1 text-left">
-                                                        <div className="font-medium text-gray-900">{member.fullName}</div>
+                                                        <div
+                                                            className="font-medium text-gray-900">{member.fullName}</div>
                                                         <div className="text-xs text-gray-500">{member.email}</div>
                                                     </div>
                                                 </button>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink, Link } from 'react-router-dom';
+import {NavLink, Link, Outlet} from 'react-router-dom';
 import {
     CheckSquare,
     FolderKanban,
@@ -8,28 +8,27 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '@/store/slices/authSlice';
 import {Avatar} from "@components/Avatar";
+import NotificationBell from "@components/NotificationBell";
 
 
 
 
 export const Sidebar: React.FC = () => {
     const userInfo = useAuthStore((state) => state.userInfo);
-
+    const accessToken = useAuthStore((state) => state.accessToken);
     return (
         <div className="flex h-screen flex-col border-r border-gray-200 bg-white
         transition-all duration-300 ease-in-out
             w-20 lg:w-64">
             {/* 1. Logo/Header */}
-            <div className="flex items-center p-3 gap-3 lg:p-5 justify-center lg:justify-start">
+            <div className="flex items-center p-3 lg:gap-2 lg:p-5 justify-center lg:justify-start">
                 <Link to="/" className="flex items-center gap-3">
-                    <div className="rounded-lg bg-blue-600 p-2 text-white">
-                        <ClipboardCheck className="h-6 w-6" />
-                    </div>
                     <div className={"lg:block hidden whitespace-nowrap"}>
                         <h1 className="text-lg font-bold text-gray-900">Task Manager</h1>
                         <p className="text-xs text-gray-500">Quản lý dự án</p>
                     </div>
                 </Link>
+                <NotificationBell userId={userInfo.userId} accessToken={accessToken}/>
             </div>
 
             {/* 2. Menu Điều hướng */}

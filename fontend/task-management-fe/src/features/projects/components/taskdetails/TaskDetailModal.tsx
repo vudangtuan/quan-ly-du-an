@@ -143,7 +143,6 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({taskId, isOpen,
                                     task={task}
                                     project={project}
                                     canManage={canManage}
-                                    updateTask={updateTaskMutation.mutate}
                                     isError={updateTaskMutation.isError}
                                 />
 

@@ -18,7 +18,6 @@ spring:
           batch_size: 30
         order_updates: true
         order_inserts: true
-        generate_statistics: true
   data:
     redis:
       host: ${REDIS_HOST:localhost}
@@ -56,8 +55,6 @@ logging:
   level:
     org.springframework.security: debug
     org.springframework.web: debug
-    org.hibernate.stat: DEBUG
-    org.hibernate.jdbc.batch: DEBUG
 
 app:
   frontend-url: ${FRONTEND_URL:http://localhost:5173}

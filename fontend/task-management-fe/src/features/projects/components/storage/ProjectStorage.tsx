@@ -5,8 +5,8 @@ import {ProjectDetailContext} from "@features/projects/pages/ProjectDetailPage";
 import {ProjectService} from "@features/projects/services/ProjectService";
 import {QUERY_GC_TIME, QUERY_STALE_TIME} from "@config/query.config";
 import {
-    ArchiveRestore,
-    Clock, Loader2,
+    ArchiveRestore, Clipboard,
+    Clock, Columns, Columns2, Columns3, Columns4, FolderKanban, Loader2, RefreshCcw,
     Trash2,
 } from "lucide-react";
 import {formatDateLocalDate} from "@features/utils/date.utils";
@@ -94,58 +94,52 @@ export const ProjectStorage: React.FC = () => {
             {/* Main List */}
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                 <div className="divide-y divide-gray-100">
-                    {/* Header Row */}
-                    <div
-                        className="bg-gray-50 px-6 py-3 grid grid-cols-12 gap-4 text-xs font-semibold text-gray-500 uppercase border-b border-gray-200">
-                        <div className="col-span-6">Tên mục</div>
-                        <div className="col-span-2">Loại</div>
-                        <div className="col-span-3">Thời gian xóa</div>
-                        <div className="col-span-1 text-right"></div>
-                    </div>
-
                     {/* Items */}
                     {items.map((item) => (
                         <div key={item.itemId}
-                             className="px-6 py-4 grid grid-cols-12 gap-4 items-center hover:bg-blue-50/30 transition-colors group">
-                            {/* Tên */}
-                            <div className="col-span-6 min-w-0">
-                                <p className="font-medium text-gray-900 truncate" title={item.name}>
-                                    {item.name}
-                                </p>
+                             className="flex items-center justify-between p-5 hover:bg-gray-50 transition-colors group">
+                            {/* Thông tin dự án */}
+                            <div className="flex items-center gap-4 min-w-0">
+                                <div
+                                    className="h-10 w-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 flex-shrink-0">
+                                    {item.type==='TASK'&& <Clipboard/>}
+                                    {item.type==='COLUMN'&& <Columns2/>}
+                                </div>
+                                <div className="min-w-0">
+                                    <h4 className="text-sm font-medium text-gray-900 truncate max-w-[200px] sm:max-w-xs">
+                                        {item.name}
+                                    </h4>
+                                    <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
+                                        <Clock size={12}/>
+                                        <span>Lưu trữ: {item.archivedAt ? formatDateLocalDate(item.archivedAt) : 'N/A'}</span>
+                                    </div>
+                                </div>
                             </div>
 
-                            {/* Loại */}
-                            <div className="col-span-2">
-                                    <span
-                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
-                                        {item.type}
-                                    </span>
-                            </div>
-
-                            {/* Thời gian */}
-                            <div className="col-span-3 text-sm text-gray-500 flex items-center gap-2">
-                                <Clock className="h-4 w-4 text-gray-400"/>
-                                {item.archivedAt ? formatDateLocalDate(item.archivedAt) : "--"}
-                            </div>
-
-                            {/* Nút Khôi phục */}
-                            <div className="col-span-1 flex">
-                                <button
-                                    onClick={() => handleRestoreItem(item)}
-                                    disabled={restoreTaskMutation.isPending || restoreColumnMutation.isPending}
-                                    title="Khôi phục"
-                                    className="p-2 text-blue-600 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {restoreTaskMutation.isPending || restoreColumnMutation.isPending ?
-                                        <Loader2 className={"h-4 w-4 animate-spin"}/> :
-                                        <ArchiveRestore className="h-4 w-4"/>}
-                                </button>
+                            {/* Nút hành động */}
+                            <div className="flex items-center gap-2">
+                                {/* Nút Xóa - MỚI THÊM */}
                                 <button
                                     onClick={() => handleDeleteItem(item)}
-                                    title="Xóa"
-                                    className="p-2 text-red-500 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg
+                                             transition-colors disabled:opacity-50"
+                                    title="Xóa vĩnh viễn"
                                 >
                                     <Trash2 className="h-4 w-4"/>
+                                </button>
+
+                                {/* Nút Khôi phục */}
+                                <button
+                                    onClick={() => handleRestoreItem(item)}
+                                    disabled={restoreColumnMutation.isPending || restoreTaskMutation.isPending}
+                                    className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-blue-700 bg-blue-50
+                                             hover:bg-blue-100 rounded-lg transition-all active:scale-95 disabled:opacity-50"
+                                >
+                                    {restoreColumnMutation.isPending||restoreTaskMutation.isPending ? (
+                                        <Loader2 className="h-3.5 w-3.5 animate-spin"/>
+                                    ) : (
+                                        <RefreshCcw className="h-3.5 w-3.5"/>
+                                    )}
                                 </button>
                             </div>
                         </div>

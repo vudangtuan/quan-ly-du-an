@@ -40,4 +40,12 @@ public interface TaskService {
     CommentResponse updateComment(String projectId,String taskId,String commentId, String body);
 
     List<TaskResponse> getMyTasks();
+
+    void addAssigneeTask(String projectId, String taskId, String assigneeId);
+
+    void deleteAssigneeTask(String projectId, String taskId, String assigneeId);
+
+    void addLabelTask(String projectId, String taskId, String labelId);
+
+    void deleteLabelTask(String projectId, String taskId, String labelId);
 }

@@ -15,6 +15,9 @@ import java.io.Serializable;
 public class InvitationData implements Serializable {
     private String projectId;
     private String memberId;
+    private String emailMember;
+    private String memberName;
     private Role role;
     private String inviterId;
+    private String inviterName;
 }

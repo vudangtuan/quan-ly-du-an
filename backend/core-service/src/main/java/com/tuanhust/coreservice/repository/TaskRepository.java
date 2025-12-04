@@ -17,7 +17,6 @@ public interface TaskRepository extends JpaRepository<Task, String> {
             select max(t.sortOrder) from Task t where t.boardColumnId=:boardColumnId and
                         t.projectId=:projectId
             """)
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<Double> getMaxSortOrder(String projectId, String boardColumnId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)

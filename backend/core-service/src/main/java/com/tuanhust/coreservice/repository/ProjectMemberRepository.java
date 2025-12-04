@@ -11,19 +11,15 @@ import java.util.Optional;
 
 
 public interface ProjectMemberRepository extends JpaRepository<ProjectMember, ProjectMemberID> {
-    @Query("""
-            select m.memberId from ProjectMember m where m.projectId=:projectId
-            """)
-    List<String> findMemberIdForProject(String projectId);
 
     @Query(value = """
     select pm.role from ProjectMember pm where pm.projectId=:projectId and pm.memberId=:memberId
     """)
     Optional<Role> getRole(String projectId, String memberId);
 
-    List<ProjectMember> findAllByProjectIdIn(List<String> projectIds);
-
     int countByProjectId(String projectId);
 
     long countByProjectIdAndMemberIdIn(String projectId, List<String> userIds);
+
+    List<ProjectMember> findByMemberIdInAndProjectId(List<String> assigneeIds, String projectId);
 }

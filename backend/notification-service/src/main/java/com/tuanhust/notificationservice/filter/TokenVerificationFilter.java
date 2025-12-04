@@ -1,8 +1,8 @@
-package com.tuanhust.activityservice.filter;
+package com.tuanhust.notificationservice.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tuanhust.activityservice.config.UserPrincipal;
-import com.tuanhust.activityservice.jwt.JwtVerifier;
+import com.tuanhust.notificationservice.config.UserPrincipal;
+import com.tuanhust.notificationservice.jwt.JwtVerifier;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;

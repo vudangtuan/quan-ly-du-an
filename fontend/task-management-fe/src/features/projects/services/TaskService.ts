@@ -41,6 +41,35 @@ export const TaskService = {
     updateTask: async (projectId: string, taskId: string, data: Partial<TaskRequest>): Promise<void> => {
         return await privateApi.put(`/project/${projectId}/task/${taskId}`, data);
     },
+    addAssigneeTask: async (projectId: string, taskId: string, assigneeId: string): Promise<void> => {
+        return await privateApi.put(`/project/${projectId}/task/${taskId}/assignees`, {},{
+            params: {
+                assigneeId: assigneeId,
+            }
+        })
+    },
+    deleteAssigneeTask: async (projectId: string, taskId: string, assigneeId: string): Promise<void> => {
+        return await privateApi.delete(`/project/${projectId}/task/${taskId}/assignees`,{
+            params: {
+                assigneeId: assigneeId,
+            }
+        })
+    },
+    addLabelTask: async (projectId: string, taskId: string, labelId: string): Promise<void> => {
+        return await privateApi.put(`/project/${projectId}/task/${taskId}/labels`, {},{
+            params: {
+                labelId: labelId,
+            }
+        })
+    },
+    deleteLabelTask: async (projectId: string, taskId: string,  labelId: string): Promise<void> => {
+        return await privateApi.delete(`/project/${projectId}/task/${taskId}/labels`,{
+            params: {
+                labelId: labelId,
+            }
+        })
+    },
+
     updateDone: async (projectId: string, taskId: string, completed: boolean): Promise<void> => {
         return await privateApi.put(`/project/${projectId}/task/${taskId}/complete`, {},
             {

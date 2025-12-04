@@ -116,7 +116,6 @@ export const TaskCard: React.FC<TaskCardProps> = ({task}) => {
 
                 {/* Due Date */}
                 <div className="flex items-center justify-between text-xs">
-                    <span className="text-gray-400">Tạo bởi: {creator.fullName}</span>
                     <div
                         className={`flex items-center gap-1.5 ${overdue ? "text-red-600 font-medium" : "text-gray-600"}`}
                         title={overdue ? "Đã quá hạn" : "Ngày tới hạn"}

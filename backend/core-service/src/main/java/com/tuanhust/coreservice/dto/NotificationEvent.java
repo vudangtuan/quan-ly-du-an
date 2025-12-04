@@ -14,6 +14,7 @@ import java.util.Map;
 public class NotificationEvent {
     private String channel;
     private String recipient;
+    private String recipientId;
     private String subject;
     private String content;
     private Map<String, Object> properties;

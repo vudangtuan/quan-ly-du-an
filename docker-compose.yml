@@ -9,7 +9,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: postgres
     volumes:
-      - pg_data:/var/lib/postgresql
+      - pg_data:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5432:5432"
@@ -27,31 +27,32 @@ services:
   rabbitmq:
     image: rabbitmq:management-alpine
     container_name: rb_tm
+    hostname: rabbitmq
     ports:
       - "5672:5672"
       - "15672:15672"
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
 
   mongo:
     image: mongo:8.2.2
     container_name: mongo_tm
+    hostname: mongo
     restart: unless-stopped
     ports:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+      - mongo_config:/data/configdb
 
   eureka-server:
     build: ./backend/eureka-server
     container_name: eureka-server
     ports:
       - "8761:8761"
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8761/actuator/health" ]
-      interval: 30s
-      retries: 3
 
   auth-service:
     build: ./backend/auth-service
@@ -156,4 +157,6 @@ volumes:
   pg_data:
   redis_data:
   mongo_data:
+  mongo_config:
+  rabbitmq_data:
 
