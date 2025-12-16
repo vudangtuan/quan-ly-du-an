@@ -37,6 +37,11 @@ spring:
         initial-interval: 1000
         max-attempts: 3
         multiplier: 2
+  task:
+    execution:
+      shutdown:
+        await-termination: true
+        await-termination-period: 60s
 
 server:
   port: 8001

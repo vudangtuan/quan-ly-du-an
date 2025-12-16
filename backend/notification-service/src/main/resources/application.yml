@@ -12,7 +12,7 @@ spring:
           auth: true
           starttls:
             enable: true
-    from-mail: ${FROM_MAIL}
+    from-mail: ${MAIL_SENDER}
 
   data:
     mongodb:
@@ -46,3 +46,8 @@ server:
 
 jwt:
   public-key-path: classpath:keys/public_key.pem
+
+logging:
+  level:
+    org.springframework.web: debug
+    org.springframework.data.mongodb: debug

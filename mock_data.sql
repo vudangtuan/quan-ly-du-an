@@ -11,14 +11,20 @@ DO $$
 DECLARE
     -- 4 USER THẬT CỦA BẠN
 v_user_ids TEXT[] := ARRAY[
-        '99ca853c-c418-40b1-ad7c-6c57961361d0', -- Tuấn Vũ Đăng
-        'd4d969d6-e903-4e06-8995-3c4812fe1222', -- Vũ Đăng Tuấn
-        '61479d01-2c1c-44bd-80b5-4342dbdf22df', -- Thương Phạm
-        '2eb5c52c-d567-40a3-a193-8d8fec1891d9'  -- Tuấn
+        'd77e9a10-17e1-44de-beca-903786dfa3a4',
+        '08a85e15-4e0a-4cc2-98ec-17adcae7d16b'
     ];
+ v_user_map JSONB := '{
+        "d77e9a10-17e1-44de-beca-903786dfa3a4": {
+            "email": "vudangtuan10042003@gmail.com"
+        },
+        "08a85e15-4e0a-4cc2-98ec-17adcae7d16b": {
+            "email": "vudangtuan2k3@gmail.com"
+        }
+    }';
 
-    v_project_count INT := 5;
-    v_task_min INT := 5;
+    v_project_count INT := 2;
+    v_task_min INT := 1;
     v_task_max INT := 10;
 
     v_project_id TEXT; v_col_id TEXT; v_task_id TEXT;
@@ -47,6 +53,7 @@ v_user_ids TEXT[] := ARRAY[
     v_label_info TEXT[];
     v_col_name TEXT;
     v_sort_order FLOAT;
+    v_member_email TEXT;
 
 BEGIN
 FOR v_i IN 1..v_project_count LOOP
@@ -84,9 +91,9 @@ FOREACH v_member_id IN ARRAY v_user_ids LOOP
 ELSE
                 v_role := 'VIEWER';    -- 40% cơ hội là Viewer
 END IF;
-
-INSERT INTO project_members (project_id, member_id, role, joined_at)
-VALUES (v_project_id, v_member_id, v_role, NOW());
+v_member_email := v_user_map -> v_member_id ->> 'email';
+INSERT INTO project_members (project_id, member_id, role, joined_at,email)
+VALUES (v_project_id, v_member_id, v_role, NOW(),v_member_email);
 END LOOP;
 
         -- Chọn Template
@@ -135,9 +142,9 @@ VALUES (
        );
 
 -- 3. BẮT BUỘC CÓ ASSIGNEE (1-3 người)
-FOR v_k IN 1..(floor(random() * 3) + 1)::int LOOP
+FOR v_k IN 1..(floor(random() * 2) + 1)::int LOOP
                     INSERT INTO task_assignee (task_id, assignee_id, join_at)
-                    VALUES (v_task_id, v_user_ids[1 + floor(random() * 4)::int], NOW())
+                    VALUES (v_task_id, v_user_ids[1 + floor(random() * 2)::int], NOW())
                     ON CONFLICT DO NOTHING;
 END LOOP;
 
@@ -160,8 +167,8 @@ END LOOP;
 FOR v_k IN 1..(floor(random() * 3) + 1)::int LOOP
                     DECLARE
 v_cmt_id TEXT := gen_random_uuid();
-                        v_cmt_user TEXT := v_user_ids[1 + floor(random() * 4)::int];
-                        v_tag_user TEXT := v_user_ids[1 + floor(random() * 4)::int];
+                        v_cmt_user TEXT := v_user_ids[1 + floor(random() * 2)::int];
+                        v_tag_user TEXT := v_user_ids[1 + floor(random() * 2)::int];
 BEGIN
                         IF random() < 0.6 THEN
                             INSERT INTO comments (comment_id, body, creator_id, task_id, created_at, updated_at)

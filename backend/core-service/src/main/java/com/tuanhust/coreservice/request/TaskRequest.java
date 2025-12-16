@@ -29,4 +29,5 @@ public class TaskRequest {
     private String boardColumnId;
     private List<String> assigneeIds;
     private List<String> labelIds;
+    private List<String> checkLists;
 }

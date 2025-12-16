@@ -87,9 +87,7 @@ public class ProjectServiceImpl implements ProjectService {
                 .collect(Collectors.toSet());
         project.setLabels(labels);
 
-        Set<ProjectMember> members = projectRequest.getMembers()
-                .stream().peek(pm -> pm.setProject(project))
-                .collect(Collectors.toSet());
+        Set<ProjectMember> members = new HashSet<>();
         members.add(ProjectMember.builder()
                 .project(project)
                 .role(Role.OWNER)
@@ -119,10 +117,10 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional(readOnly = true)
-    public PaginatedResponse<ProjectResponse> getProjectsForUserId(Pageable pageable, String userId) {
+    public PaginatedResponse<ProjectResponse> getProjectsForUserId(Pageable pageable) {
         try {
             String currentUserId = getCurrentUser().getUserId();
-            Page<Project> projectPage = projectRepository.findAllByUserId(pageable, userId);
+            Page<Project> projectPage = projectRepository.findAllByUserId(pageable, currentUserId);
             List<Project> projects = projectPage.getContent();
 
             List<ProjectResponse> projectResponses = projects.stream().map(p -> {

@@ -38,4 +38,12 @@ public interface TaskRepository extends JpaRepository<Task, String> {
             and t.dueAt between :start and :end
             """)
     List<Task> findTasksDueBetween(Instant start, Instant end);
+
+
+    @Query(value = """
+            select t.* from tasks t join board_columns bc using(board_column_id)
+                         where t.project_id=:projectId and t.status='ACTIVE' and
+                                           bc.status='ACTIVE'
+            """,nativeQuery = true)
+    List<Task> getAllTaskByProject(String projectId);
 }

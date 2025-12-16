@@ -11,6 +11,7 @@ import com.tuanhust.coreservice.publisher.ActivityPublisher;
 import com.tuanhust.coreservice.publisher.NotificationPublisher;
 import com.tuanhust.coreservice.repository.ProjectMemberRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -22,6 +23,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class TaskEventListener {
@@ -48,7 +50,6 @@ public class TaskEventListener {
                 sendNotificationLogForDeleteAssignee(event);
             }
             default -> {
-                return;
             }
         }
     }
@@ -74,7 +75,7 @@ public class TaskEventListener {
 
     private void sendNotificationLogForComment(TaskEvent event) {
         try {
-            String taskLink = frontendUrl + "/projects/" + event.projectId() + "/kanban?taskId="
+            String taskLink = frontendUrl + "/project/" + event.projectId() + "/task/"
                     + event.task().getTaskId();
             Map<String, Object> props = new HashMap<>();
             props.put("link", taskLink);
@@ -103,7 +104,7 @@ public class TaskEventListener {
 
     private void sendNotificationLogForAssigneeTask(TaskEvent event) {
         try {
-            String taskLink = frontendUrl + "/projects/" + event.projectId() + "/kanban?taskId="
+            String taskLink = frontendUrl + "/project/" + event.projectId() + "/task/"
                     + event.task().getTaskId();
             Map<String, Object> props = new HashMap<>();
             props.put("template", "email_add_assignee_task");
@@ -123,18 +124,20 @@ public class TaskEventListener {
             props.put("link", taskLink);
             List<ProjectMember> assignees = (List<ProjectMember>) event.notifyProps().get("assignees");
             assignees.forEach(a -> {
-                NotificationEvent notificationEvent = NotificationEvent.builder()
-                        .channel("ALL")
-                        .recipientId(a.getMemberId())
-                        .recipient(a.getEmail())
-                        .subject("Bạn đã được thêm vào 1 nhiệm vụ")
-                        .properties(props)
-                        .build();
-                notificationPublisher.publish(notificationEvent);
+                if(!a.getMemberId().equals(event.actor().getUserId())){
+                    NotificationEvent notificationEvent = NotificationEvent.builder()
+                            .channel("ALL")
+                            .recipientId(a.getMemberId())
+                            .recipient(a.getEmail())
+                            .subject("Bạn đã được thêm vào 1 nhiệm vụ")
+                            .properties(props)
+                            .build();
+                    notificationPublisher.publish(notificationEvent);
+                }
             });
 
         } catch (Exception e) {
-            return;
+            log.error(e.getMessage());
         }
     }
 
@@ -151,17 +154,19 @@ public class TaskEventListener {
                 props.put("type", "REMOVE_ASSIGNEE_TASK");
                 props.put("recipientName", assignee.getFullName());
 
-                NotificationEvent notificationEvent = NotificationEvent.builder()
-                        .channel("ALL")
-                        .recipient(assignee.getEmail())
-                        .recipientId(assignee.getUserId())
-                        .subject("Bạn đã được xóa khỏi 1 nhiệm vụ")
-                        .properties(props)
-                        .build();
-                notificationPublisher.publish(notificationEvent);
+                if(!Objects.equals(assignee.getUserId(), event.actor().getUserId())){
+                    NotificationEvent notificationEvent = NotificationEvent.builder()
+                            .channel("ALL")
+                            .recipient(assignee.getEmail())
+                            .recipientId(assignee.getUserId())
+                            .subject("Bạn đã được xóa khỏi 1 nhiệm vụ")
+                            .properties(props)
+                            .build();
+                    notificationPublisher.publish(notificationEvent);
+                }
             }
         } catch (Exception e) {
-            return;
+            log.error(e.getMessage());
         }
 
     }

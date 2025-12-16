@@ -14,7 +14,7 @@ import java.util.Optional;
 public interface ProjectRepository extends JpaRepository<Project, String> {
     @Query(value = """
              select p from Project p left join ProjectMember m
-             on p.projectId=m.projectId where m.memberId=:userId
+             on p.projectId=m.projectId where m.memberId=:userId order by p.createdAt desc
             """)
     Page<Project> findAllByUserId(Pageable pageable, String userId);
 

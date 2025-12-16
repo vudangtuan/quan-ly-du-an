@@ -18,6 +18,7 @@ public class TaskDetailResponse {
     private String taskId;
     private String title;
     private String description;
+    private Double sortOrder;
     private Status status;
     private Priority priority;
     private Boolean completed;

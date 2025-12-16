@@ -15,7 +15,7 @@ import java.util.List;
 public interface ProjectService {
     ProjectResponse createProject(ProjectRequest projectRequest);
 
-    PaginatedResponse<ProjectResponse> getProjectsForUserId(Pageable pageable, String userId);
+    PaginatedResponse<ProjectResponse> getProjectsForUserId(Pageable pageable);
 
     void sendInvitation(InviteMemberRequest request);
 

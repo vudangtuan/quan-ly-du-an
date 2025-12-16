@@ -46,6 +46,6 @@ public class Activity {
     private Map<String, Object> metadata;
 
     @CreatedDate
-    @Indexed(expireAfter = "7776000") //90 days
+    @Indexed(expireAfter = "90d")
     private Instant createdAt;
 }

@@ -57,7 +57,7 @@ public class Task {
     private Double sortOrder;
 
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "task",orphanRemoval = true)
-    @OrderBy("updatedAt asc ")
+    @OrderBy("updatedAt desc")
     private Set<Comment> comments;
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "task", orphanRemoval = true)
     private Set<TaskLabel> taskLabels;

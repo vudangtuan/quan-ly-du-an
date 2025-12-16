@@ -25,6 +25,6 @@ public class Notification {
     private Boolean isRead;
     private Map<String, Object> properties;
     @CreatedDate
-    @Indexed(expireAfter = "7776000")
+    @Indexed(expireAfter = "90d")
     private Instant createdAt;
 }

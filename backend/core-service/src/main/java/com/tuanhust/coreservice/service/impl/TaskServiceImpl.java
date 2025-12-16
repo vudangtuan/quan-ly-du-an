@@ -109,7 +109,19 @@ public class TaskServiceImpl implements TaskService {
                     .collect(Collectors.toSet());
             task.setTaskLabels(labels);
         }
+        if (taskRequest.getCheckLists() != null && !taskRequest.getCheckLists().isEmpty()) {
+            Set<CheckList> checkLists = taskRequest.getCheckLists().stream()
+                    .map(c -> CheckList.builder()
+                            .body(c)
+                            .task(task)
+                            .creatorId(creator.getUserId())
+                            .build())
+                    .collect(Collectors.toSet());
+            task.setCheckLists(checkLists);
+        }
         Task savedTask = taskRepository.save(task);
+        savedTask.setProjectId(projectId);
+        savedTask.setBoardColumnId(savedTask.getBoardColumn().getBoardColumnId());
         List<ProjectMember> assignees = projectMemberRepository.findByMemberIdInAndProjectId(
                 taskRequest.getAssigneeIds()
                         .stream()
@@ -134,9 +146,9 @@ public class TaskServiceImpl implements TaskService {
     @Override
     @Transactional(readOnly = true)
     public List<TaskResponse> getTaskForProject(String projectId) {
-        Project project = projectRepository.findById(projectId)
+        projectRepository.findById(projectId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dự án không tồn tại"));
-        List<Task> tasks = project.getTasks().stream().toList();
+        List<Task> tasks = taskRepository.getAllTaskByProject(projectId);
         return tasks.stream().map(this::maptoTaskResponse).collect(Collectors.toList());
     }
 
@@ -218,6 +230,7 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "taskDetail", key = "#taskId")
     public TaskResponse moveTask(String projectId, String taskId, Double sortOrder, String boardColumnId) {
         Task task = taskRepository.findTaskByProjectIdAndTaskId(projectId, taskId)
                 .orElseThrow(
@@ -227,6 +240,12 @@ public class TaskServiceImpl implements TaskService {
 
         List<Map<String, Object>> changes = new ArrayList<>();
         Map<String, Object> metadata = new HashMap<>();
+
+        if (sortOrder < 0) {
+            Double maxSortOrder = taskRepository.getMaxSortOrder(projectId, boardColumnId)
+                    .orElse(0.0);
+            sortOrder = Math.ceil(maxSortOrder) + 1;
+        }
 
         changes.add(createChangeLog("Cột", task.getBoardColumn().getName(), boardColumn.getName()));
         changes.add(createChangeLog("Vị trí", task.getSortOrder(), sortOrder));
@@ -284,6 +303,7 @@ public class TaskServiceImpl implements TaskService {
                 .title(task.getTitle())
                 .description(task.getDescription())
                 .status(task.getStatus())
+                .sortOrder(task.getSortOrder())
                 .priority(task.getPriority())
                 .completed(task.getCompleted())
                 .createdAt(task.getCreatedAt())
@@ -368,6 +388,7 @@ public class TaskServiceImpl implements TaskService {
                 .build();
         taskAssigneeRepository.save(taskAssignee);
 
+
         eventPublisher.publishEvent(new TaskEvent(
                 task,
                 projectId,
@@ -377,10 +398,10 @@ public class TaskServiceImpl implements TaskService {
                 task.getTaskId(),
                 task.getTitle(),
                 null,
-                Map.of("assignees", ProjectMember.builder()
+                Map.of("assignees", List.of(ProjectMember.builder()
                         .memberId(assigneeId)
                         .email(assignee.getEmail())
-                        .build())
+                        .build()))
         ));
     }
 
@@ -537,6 +558,17 @@ public class TaskServiceImpl implements TaskService {
                         null
                 ));
             }
+        }
+        if (body != null && !body.isEmpty()) {
+            checkList.setBody(body);
+            eventPublisher.publishEvent(new TaskEvent(
+                    checkList.getTask(), projectId, getCurrentUser(),
+                    ActionType.UPDATE_CHECKLIST,
+                    "Đã chỉnh sửa công việc",
+                    checkListId,
+                    checkList.getBody(),
+                    null
+            ));
         }
         return CheckListResponse.builder()
                 .taskId(checkList.getTaskId())
@@ -716,7 +748,7 @@ public class TaskServiceImpl implements TaskService {
                 .completed(task.getCompleted())
                 .sortOrder(task.getSortOrder())
                 .status(task.getStatus())
-                .boardColumnId(task.getBoardColumnId())
+                .boardColumnId(task.getBoardColumn().getBoardColumnId())
                 .creatorId(task.getCreatorId())
                 .assigneeIds(task.getAssignees() != null ?
                         task.getAssignees().stream().map(TaskAssignee::getAssigneeId).collect(Collectors.toList()) :

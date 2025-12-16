@@ -28,7 +28,6 @@ public class CheckList {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String checkListId;
-    @Column(nullable = false)
     private String body;
     @Column(name = "task_id", insertable = false, updatable = false)
     private String taskId;

@@ -163,7 +163,7 @@ public class TaskController {
     public ResponseEntity<ApiResponse<CheckListResponse>> createCheckList(
             @PathVariable String projectId,
             @PathVariable String taskId,
-            @RequestParam String body
+            @RequestParam(required = false) String body
     ) {
         return ResponseEntity.ok(ApiResponse.success(
                 taskService.createCheckList(projectId, taskId, body)));

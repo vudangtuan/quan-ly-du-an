@@ -26,5 +26,4 @@ public class ProjectRequest {
     private Instant dueAt;
     private List<BoardColumn> boardColumns;
     private List<Label> labels;
-    private List<ProjectMember> members;
 }

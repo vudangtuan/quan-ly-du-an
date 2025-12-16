@@ -41,15 +41,11 @@ public class ProjectController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<PaginatedResponse<ProjectResponse>>> getProjects(
-            @RequestParam String userId,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "3") int size,
-            @RequestParam(defaultValue = "createdAt") String sortBy,
-            @RequestParam(defaultValue = "DESC") String direction) {
-        Sort.Direction sortDirection = Sort.Direction.fromString(direction);
-        Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
+            @RequestParam(defaultValue = "3") int size) {
+        Pageable pageable = PageRequest.of(page, size);
 
-        PaginatedResponse<ProjectResponse> projects = projectService.getProjectsForUserId(pageable, userId);
+        PaginatedResponse<ProjectResponse> projects = projectService.getProjectsForUserId(pageable);
         return ResponseEntity.ok(ApiResponse.success(projects));
     }
 

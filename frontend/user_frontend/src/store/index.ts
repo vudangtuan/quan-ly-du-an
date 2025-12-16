@@ -1,0 +1,1 @@
+export {useAuthStore} from "./slices/authSlice"
