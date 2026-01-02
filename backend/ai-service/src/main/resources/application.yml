@@ -1,0 +1,64 @@
+spring:
+  application:
+    name: ai-service
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  cache:
+    type: redis
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/ai_db}
+    username: ${DB_USERNAME:tuan}
+    password: ${DB_PASSWORD:1234}
+    driver-class-name: org.postgresql.Driver
+  ai:
+    openai:
+      api-key: ${OPENROUTER_API_KEY}
+      base-url: ${OPENROUTER_BASE_URL}
+      chat:
+        options:
+          model: ${OPENROUTER_MODEL}
+          temperature: 0.2
+    vectorstore:
+      pgvector:
+        dimensions: 384
+        initialize-schema: true
+    embedding:
+      transformer:
+        cache:
+          enabled: true
+    chat:
+      memory:
+        repository:
+          jdbc:
+            initialize-schema: always
+            schema: classpath:schema.sql
+
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:localhost}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME:guest}
+    password: ${SPRING_RABBITMQ_PASSWORD:guest}
+    listener:
+      simple:
+        retry:
+          enabled: true
+          initial-interval: 3000
+          max-attempts: 3
+          multiplier: 2
+
+jwt:
+  public-key-path: classpath:keys/public_key.pem
+internal:
+  secret-key: ${INTERNAL_SECRET_KEY:dHXhuqVuMjAyMTQxMzM=}
+server:
+  port: 8004
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka/}
+
+logging.level.org.springframework.ai: DEBUG
+

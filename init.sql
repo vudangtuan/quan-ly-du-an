@@ -1,4 +1,7 @@
 CREATE DATABASE user_db;
 CREATE DATABASE core_db;
+CREATE DATABASE ai_db;
 \c core_db;
 CREATE EXTENSION IF NOT EXISTS citext;
+\c ai_db;
+CREATE EXTENSION IF NOT EXISTS vector;

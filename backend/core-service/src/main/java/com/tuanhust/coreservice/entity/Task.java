@@ -1,5 +1,6 @@
 package com.tuanhust.coreservice.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.tuanhust.coreservice.entity.enums.Priority;
 import com.tuanhust.coreservice.entity.enums.Status;
 import jakarta.persistence.*;
@@ -12,6 +13,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.Set;
 
 
@@ -58,20 +60,28 @@ public class Task {
 
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "task",orphanRemoval = true)
     @OrderBy("updatedAt desc")
-    private Set<Comment> comments;
+    @Builder.Default
+    private Set<Comment> comments = new HashSet<>();
+
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "task", orphanRemoval = true)
-    private Set<TaskLabel> taskLabels;
+    @Builder.Default
+    private Set<TaskLabel> taskLabels = new HashSet<>();
+
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "task", orphanRemoval = true)
-    private Set<TaskAssignee> assignees;
+    @Builder.Default
+    private Set<TaskAssignee> assignees = new HashSet<>();
+
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "task", orphanRemoval = true)
     @OrderBy("done ASC, createdAt DESC")
-    private Set<CheckList> checkLists;
+    @Builder.Default
+    private Set<CheckList> checkLists = new HashSet<>();
 
     @Column(name = "project_id",insertable = false,updatable = false)
     private String projectId;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id",nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
+    @JsonIgnore
     private Project project;
 
     @Column(name = "board_column_id",insertable = false,updatable = false)

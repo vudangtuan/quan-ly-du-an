@@ -12,6 +12,7 @@ import {
 } from "@/features/project_details";
 import {TaskDetailDialog} from "@/features/project_details/components";
 import {MyTasksPage} from "@/features/my_tasks";
+import {AcceptInvitePage} from "@/features/ accept-invite";
 
 
 export const routesConfig = [
@@ -35,13 +36,17 @@ export const routesConfig = [
                             {path: 'kanban', element: <ProjectKanban/>},
                             {path: 'task/:taskId', element: <TaskDetailDialog/>},
                             {path: 'dashboard', element: <ProjectDashboard/>},
-                            {path: 'archived',element: <ProjectStorage/>},
+                            {path: 'archived', element: <ProjectStorage/>},
                             {path: 'timeline', element: <ProjectTimeline/>},
                             {path: 'gantt', element: <ProjectGantt/>},
                             {path: 'list', element: <ProjectList/>},
                         ]
                     },
                 ],
+            },
+            {
+                path: '/accept-invite',
+                element: <AcceptInvitePage/>
             }
         ],
     },
@@ -51,7 +56,6 @@ export const routesConfig = [
             {path: 'login', element: <LoginPage/>}
         ],
     },
-
     {
         path: '*',
         element: <NotFoundPage/>,

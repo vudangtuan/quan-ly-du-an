@@ -70,13 +70,8 @@
                 <div class="btn-container">
                     <a th:href="${link}" class="btn" target="_blank">Chấp nhận lời mời</a>
                     <p style="font-size: 13px; color: #de350b; margin-top: 12px; font-style: italic;">
-                        ⚠️ Link này có hiệu lực trong <span th:text="${expiryDays}">7</span> ngày.
+                        Liên kết này có hiệu lực trong <span th:text="${expiryDays}">7</span> ngày.
                     </p>
-                </div>
-
-                <div class="fallback-link">
-                    Nếu nút bên trên không hoạt động, bạn có thể copy đường dẫn sau vào trình duyệt:<br>
-                    <a th:href="${inviteLink}" th:text="${inviteLink}">https://taskflow.com/invite/...</a>
                 </div>
             </td>
         </tr>

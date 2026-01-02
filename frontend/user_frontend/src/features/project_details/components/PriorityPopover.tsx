@@ -12,7 +12,7 @@ interface PriorityPopoverProps {
 
 export const PriorityPopover: React.FC<PriorityPopoverProps> = ({value, setValue, children}) => {
     return (
-        <Popover.Root>
+        <Popover.Root modal>
             <Popover.Trigger asChild>{children}</Popover.Trigger>
             <Popover.Portal>
                 <Popover.Content

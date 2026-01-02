@@ -6,15 +6,18 @@ import com.tuanhust.coreservice.dto.NotificationEvent;
 import com.tuanhust.coreservice.publisher.ActivityPublisher;
 import com.tuanhust.coreservice.publisher.NotificationPublisher;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class ProjectEventListener {
@@ -61,22 +64,27 @@ public class ProjectEventListener {
             notificationPublisher.publish(notificationEvent);
 
         } catch (Exception e) {
-            return;
+            log.error(e.toString());
         }
     }
 
     private void sendActivityLog(ProjectEvent event) {
-        ActivityEvent activity = ActivityEvent.builder()
-                .projectId(event.project().getProjectId())
-                .actorId(event.actor().getUserId())
-                .actorName(event.actor().getFullName())
-                .actorEmail(event.actor().getEmail())
-                .actionType(event.actionType())
-                .description(event.description())
-                .targetId(event.targetId())
-                .targetName(event.targetName())
-                .metadata(event.metadata())
-                .build();
-        activityPublisher.publish(activity);
+        try {
+            ActivityEvent activity = ActivityEvent.builder()
+                    .projectId(event.project().getProjectId())
+                    .actorId(event.actor().getUserId())
+                    .actorName(event.actor().getFullName())
+                    .actorEmail(event.actor().getEmail())
+                    .actionType(event.actionType())
+                    .description(event.description())
+                    .targetId(event.targetId())
+                    .targetName(event.targetName())
+                    .metadata(event.metadata())
+                    .createdAt(Instant.now())
+                    .build();
+            activityPublisher.publish(activity);
+        } catch (Exception e) {
+            log.error(e.toString());
+        }
     }
 }

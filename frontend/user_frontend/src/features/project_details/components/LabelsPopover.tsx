@@ -13,7 +13,7 @@ interface LabelsPopoverProps {
 
 export const LabelsPopover: React.FC<LabelsPopoverProps> = ({labels, selectedLabelIds, toggleLabels, children}) => {
     return (
-        <Popover.Root>
+        <Popover.Root modal>
             <Popover.Trigger asChild>{children}</Popover.Trigger>
             <Popover.Portal>
                 <Popover.Content

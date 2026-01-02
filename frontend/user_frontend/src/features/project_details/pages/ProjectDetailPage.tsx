@@ -4,6 +4,7 @@ import {useActivityStream, useProjectDetail} from "@/features/project_details/ho
 import {Loader2} from "lucide-react";
 import {ProjectDetailHeader} from "@/features/project_details/layouts";
 import type {ProjectDetailResponse, TaskResponse} from "@/shared/types";
+import {ChatBot} from "@/features/project_details/components";
 
 export interface ProjectDetailContext {
     projectDetail: ProjectDetailResponse;
@@ -14,7 +15,7 @@ export interface ProjectDetailContext {
 export const ProjectDetailPage: React.FC = () => {
     const {projectId} = useParams<{ projectId: string }>();
 
-    const {projectDetail,tasks, isLoading, isError} = useProjectDetail(projectId!);
+    const {projectDetail, tasks, isLoading, isError} = useProjectDetail(projectId!);
     const activityStream = useActivityStream(projectId!);
 
     const outletContext: ProjectDetailContext = {
@@ -22,7 +23,6 @@ export const ProjectDetailPage: React.FC = () => {
         allTasks: tasks!,
         activityStream: activityStream,
     };
-
 
 
     if (isLoading) {
@@ -47,6 +47,7 @@ export const ProjectDetailPage: React.FC = () => {
             <div className={`flex-1 overflow-hidden`}>
                 <Outlet context={outletContext}/>
             </div>
+            <ChatBot project={projectDetail!}/>
         </div>
     )
 }

@@ -1,5 +1,6 @@
 package com.tuanhust.coreservice.service.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tuanhust.coreservice.client.AuthServiceClient;
 import com.tuanhust.coreservice.config.UserPrincipal;
 import com.tuanhust.coreservice.dto.ActionType;
@@ -37,10 +38,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -57,6 +56,7 @@ public class ProjectServiceImpl implements ProjectService {
     private final AuthServiceClient authClient;
     private final RedisTemplate<String, Object> redisTemplate;
     private final ApplicationEventPublisher eventPublisher;
+    private final ObjectMapper objectMapper;
 
     @Value("${app.frontend-url}")
     private String frontendUrl;
@@ -99,8 +99,8 @@ public class ProjectServiceImpl implements ProjectService {
         Project savedProject = projectRepository.save(project);
 
         eventPublisher.publishEvent(new ProjectEvent(
-                savedProject, userCurrent, ActionType.CREATE_PROJECT, "Đã tạo dự án",
-                savedProject.getProjectId(), savedProject.getName(), null
+                savedProject, userCurrent, ActionType.CREATE_PROJECT, "đã tạo dự án",
+                savedProject.getProjectId(), savedProject.getName(), Map.of()
         ));
 
 
@@ -160,34 +160,35 @@ public class ProjectServiceImpl implements ProjectService {
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dự án không tồn tại")
         );
 
-        List<Map<String, Object>> changes = new ArrayList<>();
-
+        Map<String, Object> newData = new HashMap<>();
+        Map<String, Object> oldData = new HashMap<>();
 
         if (!Objects.equals(project.getName(), request.getName()) &&
                 request.getName() != null && !request.getName().trim().isEmpty()) {
-            changes.add(createChangeLog("Tên dự án", project.getName(), request.getName()));
-
+            oldData.put("name", project.getName());
             project.setName(request.getName());
+            newData.put("name", project.getName());
         }
         if (!Objects.equals(project.getDescription(), request.getDescription())) {
-            changes.add(createChangeLog("Mô tả", project.getDescription(), request.getDescription()));
+            oldData.put("description", project.getDescription());
             project.setDescription(request.getDescription());
+            newData.put("description", project.getDescription());
         }
 
         if (!Objects.equals(project.getDueAt(), request.getDueAt())) {
-            changes.add(createChangeLog("Hạn chót", instantToString(project.getDueAt()),
-                    instantToString(normalizeToEndOfDay(request.getDueAt()))));
-
+            oldData.put("dueAt", project.getDueAt() != null ? project.getUpdatedAt().toString() : null);
             project.setDueAt(normalizeToEndOfDay(request.getDueAt()));
+            newData.put("dueAt", project.getDueAt() != null ? project.getUpdatedAt().toString() : null);
         }
 
-        if (!changes.isEmpty()) {
-            Map<String, Object> metadata = new HashMap<>();
-            metadata.put("changes", changes);
+        if (!newData.isEmpty()) {
+            Map<String, Object> data = new HashMap<>();
+            data.put("old", oldData);
+            data.put("new", newData);
             String description = "đã cập nhật thông tin dự án";
             eventPublisher.publishEvent(new ProjectEvent(
                     project, getCurrentUser(), ActionType.UPDATE_PROJECT,
-                    description, projectId, project.getName(), metadata
+                    description, projectId, project.getName(), data
             ));
         }
     }
@@ -199,12 +200,22 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = projectRepository.findById(projectId).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dự án không tồn tại")
         );
+        Map<String, Object> old = new HashMap<>();
+        old.put("status", project.getStatus().name());
+
         project.setStatus(Status.ARCHIVED);
         project.setArchivedAt(Instant.now());
 
+        Map<String, Object> data = new HashMap<>();
+        data.put("old", old);
+        data.put("new", Map.of("status", Status.ARCHIVED.name(),
+                "archivedAt", project.getArchivedAt().toString()));
+
+
         eventPublisher.publishEvent(new ProjectEvent(
                 project, getCurrentUser(), ActionType.ARCHIVE_PROJECT,
-                "Đã lưu trữ dự án", projectId, project.getName(), null
+                "đã lưu trữ dự án", projectId, project.getName(),
+                data
         ));
     }
 
@@ -216,12 +227,23 @@ public class ProjectServiceImpl implements ProjectService {
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Dự án không tồn tại or chưa được lưu trữ")
         );
+        Map<String, Object> old = new HashMap<>();
+        old.put("status", project.getStatus().name());
+        old.put("archivedAt", project.getArchivedAt().toString());
+
         project.setStatus(Status.ACTIVE);
         project.setArchivedAt(null);
 
+        Map<String, Object> data = new HashMap<>();
+
+        data.put("old", old);
+        data.put("new", Map.of("status", Status.ACTIVE.name(),
+                "archivedAt", ""));
+
+
         eventPublisher.publishEvent(new ProjectEvent(
                 project, getCurrentUser(), ActionType.RESTORE_PROJECT,
-                "Đã khôi phục dự án", projectId, project.getName(), null
+                "đã khôi phục dự án", projectId, project.getName(), data
         ));
     }
 
@@ -342,12 +364,11 @@ public class ProjectServiceImpl implements ProjectService {
                     .stream().findFirst().orElseThrow(
                             () -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Không tìm thấy user")
                     );
-            List<Map<String, Object>> changes = new ArrayList<>();
-            changes.add(createChangeLog("Vai trò", projectMember.getRole(), role));
-            Map<String, Object> metadata = new HashMap<>();
-            metadata.put("changes", changes);
 
+            Map<String, Object> data = new HashMap<>();
+            data.put("old", Map.of("role", projectMember.getRole()));
             projectMember.setRole(role);
+            data.put("new", Map.of("role", projectMember.getRole()));
 
             eventPublisher.publishEvent(new ProjectEvent(
                     projectMember.getProject(),
@@ -356,7 +377,7 @@ public class ProjectServiceImpl implements ProjectService {
                     "Đã cập nhập vai trò",
                     projectMember.getMemberId(),
                     userPrincipal.getFullName(),
-                    metadata
+                    data
             ));
         }
     }
@@ -407,7 +428,6 @@ public class ProjectServiceImpl implements ProjectService {
             ));
 
 
-
             redisTemplate.opsForValue().set(redisKey, invitation, 7, TimeUnit.DAYS);
             redisTemplate.opsForValue().set(pendingKey, token, 7, TimeUnit.DAYS);
         } else {
@@ -453,7 +473,7 @@ public class ProjectServiceImpl implements ProjectService {
                 "Đã tham gia dự án qua lời mời",
                 project.getProjectId(),
                 invitation.getInviterName(),
-                null
+                Map.of("member", projectMember)
         ));
 
         redisTemplate.delete(tokenKey);
@@ -501,7 +521,7 @@ public class ProjectServiceImpl implements ProjectService {
                 "Đã xóa thành viên",
                 memberId,
                 userPrincipal.getFullName(),
-                null
+                Map.of("member", projectMember)
         ));
     }
 
@@ -526,7 +546,7 @@ public class ProjectServiceImpl implements ProjectService {
                 "Đã tạo nhãn",
                 saved.getLabelId(),
                 saved.getName(),
-                null
+                Map.of("label", label)
         ));
         return LabelResponse.builder()
                 .labelId(saved.getLabelId())
@@ -547,23 +567,27 @@ public class ProjectServiceImpl implements ProjectService {
                                 "Nhãn không tồn tại trong dự án or đã bị xóa")
                 );
 
-        List<Map<String, Object>> changes = new ArrayList<>();
+        Map<String, Object> newData = new HashMap<>();
+        Map<String, Object> oldData = new HashMap<>();
 
         if (!label.getName().equals(request.getName())) {
-            changes.add(createChangeLog("Tên", label.getName(), request.getName()));
+            oldData.put("name", label.getName());
             label.setName(request.getName());
+            newData.put("name", label.getName());
         }
         if (!label.getColor().equals(request.getColor())) {
-            changes.add(createChangeLog("Color", label.getColor(), request.getColor()));
+            oldData.put("color", label.getColor());
             label.setColor(request.getColor());
+            newData.put("color", label.getColor());
         }
-        if (!changes.isEmpty()) {
-            Map<String, Object> metadata = new HashMap<>();
-            metadata.put("changes", changes);
+        if (!newData.isEmpty()) {
+            Map<String, Object> data = new HashMap<>();
+            data.put("new", newData);
+            data.put("old", oldData);
             eventPublisher.publishEvent(new ProjectEvent(
                     label.getProject(), getCurrentUser(),
                     ActionType.UPDATE_LABEL, "Đã cập nhập nhãn",
-                    label.getLabelId(), label.getName(), metadata
+                    label.getLabelId(), label.getName(), data
             ));
         }
 
@@ -587,8 +611,8 @@ public class ProjectServiceImpl implements ProjectService {
         labelRepository.delete(label);
         eventPublisher.publishEvent(new ProjectEvent(
                 label.getProject(), getCurrentUser(),
-                ActionType.DELETE_LABEL, "Đã xóa",
-                label.getLabelId(), label.getName(), null
+                ActionType.DELETE_LABEL, "Đã xóa nhãn",
+                label.getLabelId(), label.getName(), Map.of("label", label)
         ));
     }
 
@@ -611,7 +635,7 @@ public class ProjectServiceImpl implements ProjectService {
         eventPublisher.publishEvent(new ProjectEvent(
                 saved.getProject(), getCurrentUser(),
                 ActionType.ADD_BOARD_COLUMN, "Đã tạo cột",
-                saved.getBoardColumnId(), saved.getName(), null
+                saved.getBoardColumnId(), saved.getName(), Map.of("column", saved)
         ));
         return BoardColumnResponse.builder()
                 .name(saved.getName())
@@ -621,6 +645,7 @@ public class ProjectServiceImpl implements ProjectService {
                 .status(saved.getStatus())
                 .build();
     }
+
 
     @Override
     @Transactional
@@ -635,26 +660,32 @@ public class ProjectServiceImpl implements ProjectService {
                         () -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                                 "Cột không tồn tại")
                 );
-        if (name != null && !name.isBlank()) {
-            List<Map<String, Object>> changes = new ArrayList<>();
-            changes.add(createChangeLog("Tên", boardColumn.getName(), name));
-            Map<String, Object> metadata = new HashMap<>();
-            metadata.put("changes", changes);
+        Map<String, Object> data = new HashMap<>();
+        Map<String, Object> newData = new HashMap<>();
+        Map<String, Object> oldData = new HashMap<>();
 
+        if (name != null && !name.isBlank() && !name.equals(boardColumn.getName())) {
+            oldData.put("name", boardColumn.getName());
+            boardColumn.setName(name);
+            newData.put("name", boardColumn.getName());
+            data.put("old", oldData);
+            data.put("new", newData);
             eventPublisher.publishEvent(new ProjectEvent(
                     boardColumn.getProject(), getCurrentUser(),
                     ActionType.UPDATE_BOARD_COLUMN, "Đã cập nhập cột",
-                    boardColumn.getBoardColumnId(), boardColumn.getName(), metadata
+                    boardColumn.getBoardColumnId(), boardColumn.getName(), data
             ));
-            boardColumn.setName(name);
-        }
-        if (sortOrder != null && !sortOrder.isNaN()) {
+        } else if (sortOrder != null && !sortOrder.isNaN() && !sortOrder.equals(boardColumn.getSortOrder())) {
+            oldData.put("sortOrder", sortOrder);
+            boardColumn.setSortOrder(sortOrder);
+            newData.put("sortOrder", boardColumn.getSortOrder());
+            data.put("old", oldData);
+            data.put("new", newData);
             eventPublisher.publishEvent(new ProjectEvent(
                     boardColumn.getProject(), getCurrentUser(),
                     ActionType.MOVE_BOARD_COLUMN, "Đã di chuyển cột",
-                    boardColumn.getBoardColumnId(), boardColumn.getName(), null
+                    boardColumn.getBoardColumnId(), boardColumn.getName(), data
             ));
-            boardColumn.setSortOrder(sortOrder);
         }
         return BoardColumnResponse.builder()
                 .name(boardColumn.getName())
@@ -678,7 +709,8 @@ public class ProjectServiceImpl implements ProjectService {
         eventPublisher.publishEvent(new ProjectEvent(
                 boardColumn.getProject(), getCurrentUser(),
                 ActionType.DELETE_BOARD_COLUMN, "Đã xóa cột",
-                boardColumn.getBoardColumnId(), boardColumn.getName(), null
+                boardColumn.getBoardColumnId(), boardColumn.getName(),
+                Map.of("column", boardColumn)
         ));
     }
 
@@ -692,13 +724,29 @@ public class ProjectServiceImpl implements ProjectService {
                         () -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                                 "Cột không tồn tại")
                 );
+        Map<String, Object> data = new HashMap<>();
+        Map<String, Object> newData = new HashMap<>();
+        Map<String, Object> oldData = new HashMap<>();
+
+        oldData.put("status", boardColumn.getStatus());
+        oldData.put("archivedAt", boardColumn.getArchivedAt());
+        oldData.put("sortOrder", boardColumn.getSortOrder());
+
         boardColumn.setStatus(Status.ARCHIVED);
         boardColumn.setArchivedAt(Instant.now());
         boardColumn.setSortOrder(null);
+
+        newData.put("status", boardColumn.getStatus());
+        newData.put("archivedAt", boardColumn.getArchivedAt());
+        newData.put("sortOrder", boardColumn.getSortOrder());
+
+        data.put("old", oldData);
+        data.put("new", newData);
+
         eventPublisher.publishEvent(new ProjectEvent(
                 boardColumn.getProject(), getCurrentUser(),
                 ActionType.ARCHIVE_BOARD_COLUMN, "Đã lưu trữ cột",
-                boardColumn.getBoardColumnId(), boardColumn.getName(), null
+                boardColumn.getBoardColumnId(), boardColumn.getName(), data
         ));
         return BoardColumnResponse.builder()
                 .name(boardColumn.getName())
@@ -720,6 +768,14 @@ public class ProjectServiceImpl implements ProjectService {
                         () -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                                 "Cột không tồn tại")
                 );
+        Map<String, Object> data = new HashMap<>();
+        Map<String, Object> newData = new HashMap<>();
+        Map<String, Object> oldData = new HashMap<>();
+
+        oldData.put("status", boardColumn.getStatus());
+        oldData.put("archivedAt", boardColumn.getArchivedAt());
+        oldData.put("sortOrder", boardColumn.getSortOrder());
+
         if (sortOrder == null || sortOrder.isNaN()) {
             Double maxSortOrder = boardColumnRepository
                     .getMaxSortOrderFromProject(projectId).orElse(0.0);
@@ -730,10 +786,17 @@ public class ProjectServiceImpl implements ProjectService {
         boardColumn.setStatus(Status.ACTIVE);
         boardColumn.setArchivedAt(null);
 
+        newData.put("status", boardColumn.getStatus());
+        newData.put("archivedAt", boardColumn.getArchivedAt());
+        newData.put("sortOrder", boardColumn.getSortOrder());
+
+        data.put("old", oldData);
+        data.put("new", newData);
+
         eventPublisher.publishEvent(new ProjectEvent(
                 boardColumn.getProject(), getCurrentUser(),
                 ActionType.RESTORE_BOARD_COLUMN, "Đã khôi phục cột",
-                boardColumn.getBoardColumnId(), boardColumn.getName(), null
+                boardColumn.getBoardColumnId(), boardColumn.getName(), data
         ));
 
         return BoardColumnResponse.builder()
@@ -776,28 +839,10 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
 
-    private Map<String, Object> createChangeLog(String field, Object oldValue, Object newValue) {
-        Map<String, Object> map = new HashMap<>();
-        map.put("field", field);
-        map.put("old", oldValue);
-        map.put("new", newValue);
-        return map;
-    }
-
     private Instant normalizeToEndOfDay(Instant input) {
         if (input == null) return null;
         return input.atZone(ZoneId.systemDefault())
                 .with(LocalTime.of(23, 59, 59))
                 .toInstant();
-    }
-
-    private String instantToString(Instant input) {
-        if (input == null) return null;
-        LocalDateTime dueAt = LocalDateTime.ofInstant(
-                input,
-                ZoneId.systemDefault()
-        );
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        return dueAt.format(formatter);
     }
 }

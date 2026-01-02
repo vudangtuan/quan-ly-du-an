@@ -1,5 +1,6 @@
 package com.tuanhust.coreservice.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.tuanhust.coreservice.entity.enums.Role;
 import com.tuanhust.coreservice.entity.ids.ProjectMemberID;
 import jakarta.persistence.*;
@@ -38,6 +39,7 @@ public class ProjectMember {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
+    @JsonIgnore
     private Project project;
 
     @Enumerated(EnumType.STRING)

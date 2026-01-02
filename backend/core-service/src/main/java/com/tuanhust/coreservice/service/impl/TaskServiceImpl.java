@@ -27,10 +27,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -127,6 +125,7 @@ public class TaskServiceImpl implements TaskService {
                         .stream()
                         .filter(a -> !a.equals(creator.getUserId())).toList()
                 , projectId);
+
         eventPublisher.publishEvent(new TaskEvent(
                 savedTask,
                 projectId,
@@ -135,11 +134,9 @@ public class TaskServiceImpl implements TaskService {
                 "Đã tạo nhiệm vụ",
                 savedTask.getTaskId(),
                 savedTask.getTitle(),
-                null,
+                Map.of(),
                 Map.of("assignees", assignees)
         ));
-
-
         return maptoTaskResponse(savedTask);
     }
 
@@ -160,9 +157,24 @@ public class TaskServiceImpl implements TaskService {
                 .orElseThrow(
                         () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nhiệm vụ không tồn tại")
                 );
+        Map<String, Object> data = new HashMap<>();
+        Map<String, Object> newData = new HashMap<>();
+        Map<String, Object> oldData = new HashMap<>();
+
+        oldData.put("status", task.getStatus());
+        oldData.put("sortOrder", task.getSortOrder());
+        oldData.put("archivedAt", task.getArchivedAt() != null ? task.getArchivedAt().toString() : null);
+
         task.setStatus(Status.ARCHIVED);
         task.setSortOrder(null);
         task.setArchivedAt(Instant.now());
+
+        newData.put("status", task.getStatus());
+        newData.put("sortOrder", task.getSortOrder());
+        newData.put("archivedAt", task.getArchivedAt().toString());
+
+        data.put("old", oldData);
+        data.put("new", newData);
 
         eventPublisher.publishEvent(new TaskEvent(
                 task,
@@ -172,7 +184,7 @@ public class TaskServiceImpl implements TaskService {
                 "Đã lưu trữ nhiệm vụ",
                 task.getTaskId(),
                 task.getTitle(),
-                null
+                data
         ));
         return maptoTaskResponse(task);
     }
@@ -185,6 +197,15 @@ public class TaskServiceImpl implements TaskService {
                 .orElseThrow(
                         () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nhiệm vụ không tồn tại")
                 );
+        Map<String, Object> data = new HashMap<>();
+        Map<String, Object> newData = new HashMap<>();
+        Map<String, Object> oldData = new HashMap<>();
+
+        oldData.put("status", task.getStatus());
+        oldData.put("sortOrder", task.getSortOrder());
+        oldData.put("archivedAt", task.getArchivedAt().toString());
+
+
         task.setStatus(Status.ACTIVE);
         task.setArchivedAt(null);
         if (sortOrder == null || sortOrder.isNaN()) {
@@ -194,6 +215,14 @@ public class TaskServiceImpl implements TaskService {
         } else {
             task.setSortOrder(sortOrder);
         }
+
+        newData.put("status", task.getStatus());
+        newData.put("sortOrder", task.getSortOrder());
+        newData.put("archivedAt", null);
+
+        data.put("old", oldData);
+        data.put("new", newData);
+
         eventPublisher.publishEvent(new TaskEvent(
                 task,
                 projectId,
@@ -202,7 +231,7 @@ public class TaskServiceImpl implements TaskService {
                 "Đã khôi phục nhiệm vụ",
                 task.getTaskId(),
                 task.getTitle(),
-                null
+                data
         ));
         return maptoTaskResponse(task);
     }
@@ -224,7 +253,7 @@ public class TaskServiceImpl implements TaskService {
                 "Đã xóa nhiệm vụ",
                 taskId,
                 task.getTitle(),
-                null
+                Map.of()
         ));
     }
 
@@ -238,8 +267,13 @@ public class TaskServiceImpl implements TaskService {
                 );
         BoardColumn boardColumn = boardColumnRepository.getReferenceById(boardColumnId);
 
-        List<Map<String, Object>> changes = new ArrayList<>();
-        Map<String, Object> metadata = new HashMap<>();
+        Map<String, Object> data = new HashMap<>();
+        Map<String, Object> newData = new HashMap<>();
+        Map<String, Object> oldData = new HashMap<>();
+
+        oldData.put("sortOrder", task.getSortOrder());
+        oldData.put("boardColumnId", task.getBoardColumnId());
+
 
         if (sortOrder < 0) {
             Double maxSortOrder = taskRepository.getMaxSortOrder(projectId, boardColumnId)
@@ -247,13 +281,14 @@ public class TaskServiceImpl implements TaskService {
             sortOrder = Math.ceil(maxSortOrder) + 1;
         }
 
-        changes.add(createChangeLog("Cột", task.getBoardColumn().getName(), boardColumn.getName()));
-        changes.add(createChangeLog("Vị trí", task.getSortOrder(), sortOrder));
-
-        metadata.put("changes", changes);
-
         task.setBoardColumn(boardColumn);
         task.setSortOrder(sortOrder);
+
+        newData.put("sortOrder", task.getSortOrder());
+        newData.put("boardColumnId", boardColumn.getBoardColumnId());
+
+        data.put("old", oldData);
+        data.put("new", newData);
 
         String description = "Đã di chuyển nhiệm vụ";
         eventPublisher.publishEvent(new TaskEvent(
@@ -264,7 +299,7 @@ public class TaskServiceImpl implements TaskService {
                 description,
                 task.getTaskId(),
                 task.getTitle(),
-                metadata
+                data
         ));
         return maptoTaskResponse(task);
     }
@@ -326,37 +361,40 @@ public class TaskServiceImpl implements TaskService {
         Task task = taskRepository.findTaskByProjectIdAndTaskId(projectId, taskId).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nhiệm vụ không tồn tại")
         );
-        List<Map<String, Object>> changes = new ArrayList<>();
+        Map<String, Object> data = new HashMap<>();
+        Map<String, Object> newData = new HashMap<>();
+        Map<String, Object> oldData = new HashMap<>();
 
         if (taskRequest.getTitle() != null && !taskRequest.getTitle().isBlank() &&
                 !taskRequest.getTitle().equals(task.getTitle())) {
-            changes.add(createChangeLog("Tiêu đề", task.getTitle(), taskRequest.getTitle()));
+            oldData.put("title", task.getTitle());
             task.setTitle(taskRequest.getTitle());
+            newData.put("title", task.getTitle());
         }
         if (taskRequest.getDescription() != null &&
                 !taskRequest.getDescription().equals(task.getDescription())) {
-            changes.add(createChangeLog("Mô tả", task.getDescription(), taskRequest.getDescription()));
-
-
+            oldData.put("description", task.getDescription());
             task.setDescription(taskRequest.getDescription());
+            newData.put("description", task.getDescription());
         }
         if (taskRequest.getDueAt() != null && !taskRequest.getDueAt().equals(task.getDueAt())) {
+            oldData.put("dueAt", task.getDueAt() != null ? task.getDueAt().toString() : null);
             if (taskRequest.getDueAt().equals(Instant.MIN)) {
-                changes.add(createChangeLog("Hạn chót", instantToString(task.getDueAt()), null));
                 task.setDueAt(null);
             } else {
-                changes.add(createChangeLog("Hạn chót", instantToString(task.getDueAt()),
-                        instantToString(normalizeToEndOfDay(taskRequest.getDueAt()))));
                 task.setDueAt(normalizeToEndOfDay(taskRequest.getDueAt()));
             }
+            newData.put("dueAt", task.getDueAt()!=null ? task.getDueAt().toString() : null);
         }
         if (taskRequest.getPriority() != null && taskRequest.getPriority() != task.getPriority()) {
-            changes.add(createChangeLog("Ưu tiên", task.getPriority(), taskRequest.getPriority()));
+            oldData.put("priority", task.getPriority());
             task.setPriority(taskRequest.getPriority());
+            newData.put("priority", task.getPriority());
         }
+        if (!newData.isEmpty()) {
+            data.put("new", newData);
+            data.put("old", oldData);
 
-        if (!changes.isEmpty()) {
-            Map<String, Object> metadata = Map.of("changes", changes);
             String des = "Đã cập nhập nhiệm vụ";
             eventPublisher.publishEvent(new TaskEvent(
                     task,
@@ -366,7 +404,7 @@ public class TaskServiceImpl implements TaskService {
                     des,
                     task.getTaskId(),
                     task.getTitle(),
-                    metadata
+                    data
             ));
         }
     }
@@ -481,18 +519,26 @@ public class TaskServiceImpl implements TaskService {
         Task task = taskRepository.findTaskByProjectIdAndTaskId(projectId, taskId).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nhiệm vụ không tồn tại")
         );
+        Map<String, Object> data = new HashMap<>();
+        Map<String, Object> newData = new HashMap<>();
+        Map<String, Object> oldData = new HashMap<>();
+        oldData.put("completed", task.getCompleted());
         task.setCompleted(completed);
+        newData.put("completed", task.getCompleted());
+        newData.put("updatedAt", Instant.now().toString());
+        data.put("old", oldData);
+        data.put("new", newData);
         if (completed) {
             eventPublisher.publishEvent(new TaskEvent(
                     task, projectId, getCurrentUser(), ActionType.COMPLETE_TASK,
                     "Đã hoàn thành nhiệm vu",
-                    task.getTaskId(), task.getTitle(), null
+                    task.getTaskId(), task.getTitle(), data
             ));
         } else {
             eventPublisher.publishEvent(new TaskEvent(
                     task, projectId, getCurrentUser(), ActionType.INCOMPLETE_TASK,
                     "Đã đánh dấu chưa hoàn thành nhiệm vu",
-                    task.getTaskId(), task.getTitle(), null
+                    task.getTaskId(), task.getTitle(), data
             ));
         }
     }
@@ -626,7 +672,7 @@ public class TaskServiceImpl implements TaskService {
                 ActionType.ADD_COMMENT,
                 "Đã thêm 1 bình luận",
                 savedComment.getCommentId(),
-                savedComment.getBody(),
+                null,
                 null,
                 Map.of("commentMentions", commentMentions)
         ));
@@ -673,9 +719,6 @@ public class TaskServiceImpl implements TaskService {
         }
         if (!body.equals(comment.getBody())) {
             List<Map<String, Object>> changes = new ArrayList<>();
-            Map<String, Object> metadata = new HashMap<>();
-            changes.add(createChangeLog("Nội dung", comment.getBody(), body));
-            metadata.put("changes", changes);
 
             List<String> mentionIds = extractMentions(body);
             Set<CommentMentions> commentMentions = mentionIds.stream()
@@ -698,7 +741,7 @@ public class TaskServiceImpl implements TaskService {
                     "Đã chỉnh sửa 1 bình luận",
                     comment.getCommentId(),
                     null,
-                    metadata,
+                    null,
                     Map.of("commentMentions", commentMentions)
             ));
         }
@@ -776,29 +819,10 @@ public class TaskServiceImpl implements TaskService {
         return new ArrayList<>(userIds);
     }
 
-
-    private Map<String, Object> createChangeLog(String field, Object oldValue, Object newValue) {
-        Map<String, Object> map = new HashMap<>();
-        map.put("field", field);
-        map.put("old", oldValue);
-        map.put("new", newValue);
-        return map;
-    }
-
     private Instant normalizeToEndOfDay(Instant input) {
         if (input == null) return null;
         return input.atZone(ZoneId.systemDefault())
                 .with(LocalTime.of(23, 59, 59))
                 .toInstant();
-    }
-
-    private String instantToString(Instant input) {
-        if (input == null) return null;
-        LocalDateTime dueAt = LocalDateTime.ofInstant(
-                input,
-                ZoneId.systemDefault()
-        );
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        return dueAt.format(formatter);
     }
 }

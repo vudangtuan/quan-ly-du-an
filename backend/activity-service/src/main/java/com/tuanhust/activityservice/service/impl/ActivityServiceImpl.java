@@ -17,7 +17,7 @@ public class ActivityServiceImpl implements ActivityService {
 
     @Override
     public PaginatedResponse<Activity> getActivitiesByProject(String projectId, Pageable pageable) {
-        Page<Activity> page = activityRepository.
+         Page<Activity> page = activityRepository.
                 findByProjectIdOrderByCreatedAtDesc(projectId,pageable);
         return PaginatedResponse.<Activity>builder()
                 .first(page.isFirst())

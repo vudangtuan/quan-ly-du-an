@@ -45,7 +45,6 @@ public class Activity {
 
     private Map<String, Object> metadata;
 
-    @CreatedDate
     @Indexed(expireAfter = "90d")
     private Instant createdAt;
 }

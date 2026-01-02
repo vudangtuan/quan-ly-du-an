@@ -33,7 +33,7 @@ export const TaskCreationForm: React.FC<TaskCreationFormProps> = ({children, col
     }
 
     return (
-        <Dialog.Root onOpenChange={open => {
+        <Dialog.Root modal onOpenChange={open => {
             if (!open) {
                 handleCancel();
             } else {
@@ -95,7 +95,7 @@ export const TaskCreationForm: React.FC<TaskCreationFormProps> = ({children, col
                     </div>
 
                     <form onSubmit={handleSubmit} className="flex-1 flex flex-col">
-                        <div className="overflow-y-auto px-6 py-4 space-y-6 flex-1 max-h-[60vh] scrollbar-thin">
+                        <div className="overflow-y-auto px-6 py-4 space-y-6 flex-1 max-h-[55vh] scrollbar-thin">
                             {/* Description */}
                             <div>
                                 <textarea
@@ -173,67 +173,69 @@ export const TaskCreationForm: React.FC<TaskCreationFormProps> = ({children, col
                             </div>
                         </div>
 
-                        {error && (
-                            <div className="px-3 py-1 bg-red-50 border border-red-200">
-                                <p className="text-sm font-medium text-red-600">
-                                    {error}
-                                </p>
-                            </div>
-                        )}
-
                         {/* Footer */}
-                        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
-                            <div className={"flex items-center gap-2"}>
-                                <ColumnsPopover
-                                    columns={projectDetail.boardColumns}
-                                    selectedColumnId={selectedColumnId}
-                                    setSelectedColumnId={setSelectedColumnId}
-                                >
-                                    <button
-                                        type="button"
-                                        title="Kanban"
-                                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium
+                        <div>
+                            {error && (
+                                <div title={error}
+                                     className="px-3 py-1 bg-red-50 border border-red-200 line-clamp-1">
+                                    <p className="text-sm font-medium text-red-600">
+                                        {error}
+                                    </p>
+                                </div>
+                            )}
+                            <div className="flex items-center justify-between px-6 py-2 border-t border-gray-200">
+                                <div className={"flex items-center gap-2"}>
+                                    <ColumnsPopover
+                                        columns={projectDetail.boardColumns}
+                                        selectedColumnId={selectedColumnId}
+                                        setSelectedColumnId={setSelectedColumnId}
+                                    >
+                                        <button
+                                            type="button"
+                                            title="Kanban"
+                                            className="flex items-center gap-2 px-4 py-2 text-sm font-medium
                                                    text-gray-700 hover:text-gray-900 rounded-lg
                                                    bg-gray-100 transition-colors">
-                                        <Layers className="w-4 h-4"/>
-                                        {projectDetail.boardColumns.find(bc => bc.boardColumnId === selectedColumnId)?.name}
-                                    </button>
-                                </ColumnsPopover>
-                                <DatePicker
-                                    selected={overDate}
-                                    onChange={setOverDate}
-                                    clearButtonClassName="!absolute !-right-3 !-top-3"
-                                    isClearable
-                                    minDate={new Date()}
-                                    customInput={
-                                        <button
-                                            title="Due date"
-                                            type="button"
-                                            className="p-2 flex gap-1 items-center text-gray-600 hover:text-gray-800 rounded-lg
+                                            <Layers className="w-4 h-4"/>
+                                            {projectDetail.boardColumns.find(bc => bc.boardColumnId === selectedColumnId)?.name}
+                                        </button>
+                                    </ColumnsPopover>
+                                    <DatePicker
+                                        selected={overDate}
+                                        onChange={setOverDate}
+                                        clearButtonClassName="!absolute !-right-3 !-top-3"
+                                        isClearable
+                                        minDate={new Date()}
+                                        customInput={
+                                            <button
+                                                title="Due date"
+                                                type="button"
+                                                className="p-2 flex gap-1 items-center text-gray-600 hover:text-gray-800 rounded-lg
                                                             border border-gray-300 hover:bg-gray-50 transition-colors"
-                                        >
-                                            <Calendar className="w-4 h-4"/>
-                                            {overDate && (
-                                                <span className="text-sm text-gray-700">
+                                            >
+                                                <Calendar className="w-4 h-4"/>
+                                                {overDate && (
+                                                    <span className="text-sm text-gray-700">
                                                         {overDate.toLocaleDateString()}
                                                 </span>
-                                            )}
-                                        </button>
-                                    }
-                                />
+                                                )}
+                                            </button>
+                                        }
+                                    />
 
-                            </div>
-                            <button
-                                type="submit"
-                                className="px-6 py-2 text-sm font-medium text-white
+                                </div>
+                                <button
+                                    type="submit"
+                                    className="px-6 py-2 text-sm font-medium text-white
                                           bg-indigo-600 hover:bg-indigo-700 rounded-lg
                                           transition-colors"
-                            >
-                                {creatTaskMutation.isPending ?
-                                    <Loader2 className={"animate-spin"}/> :
-                                    "Lưu"
-                                }
-                            </button>
+                                >
+                                    {creatTaskMutation.isPending ?
+                                        <Loader2 className={"animate-spin"}/> :
+                                        "Lưu"
+                                    }
+                                </button>
+                            </div>
                         </div>
                     </form>
                 </Dialog.Content>

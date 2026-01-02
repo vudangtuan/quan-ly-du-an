@@ -1,5 +1,6 @@
 package com.tuanhust.authservice.entity;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -25,6 +26,7 @@ import java.time.Instant;
                 @Index(name = "idx_oauth_provider_id", columnList = "oauth_provider,oauth_provider_id")
         })
 @SQLRestriction("status NOT IN ('DELETED', 'SUSPENDED')")
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

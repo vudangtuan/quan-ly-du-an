@@ -1,7 +1,7 @@
 package com.tuanhust.coreservice.listener;
 
 
-import com.tuanhust.coreservice.client.AuthServiceClient;
+
 import com.tuanhust.coreservice.config.UserPrincipal;
 import com.tuanhust.coreservice.dto.ActivityEvent;
 import com.tuanhust.coreservice.dto.NotificationEvent;
@@ -9,7 +9,6 @@ import com.tuanhust.coreservice.entity.CommentMentions;
 import com.tuanhust.coreservice.entity.ProjectMember;
 import com.tuanhust.coreservice.publisher.ActivityPublisher;
 import com.tuanhust.coreservice.publisher.NotificationPublisher;
-import com.tuanhust.coreservice.repository.ProjectMemberRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,6 +18,7 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
@@ -29,8 +29,6 @@ import java.util.*;
 public class TaskEventListener {
     private final ActivityPublisher activityPublisher;
     private final NotificationPublisher notificationPublisher;
-    private final AuthServiceClient authServiceClient;
-    private final ProjectMemberRepository projectMemberRepository;
 
     @Value("${app.frontend-url}")
     private String frontendUrl;
@@ -68,6 +66,7 @@ public class TaskEventListener {
                 .targetId(event.targetId())
                 .targetName(event.targetName())
                 .metadata(event.metadata())
+                .createdAt(Instant.now())
                 .build();
 
         activityPublisher.publish(activity);

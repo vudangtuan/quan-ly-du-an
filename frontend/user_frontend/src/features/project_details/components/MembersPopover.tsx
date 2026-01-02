@@ -14,7 +14,7 @@ interface MembersPopoverProps {
 export const MembersPopover: React.FC<MembersPopoverProps> =
     ({members, selectedMemberIds, toggleMembers, children}) => {
         return (
-            <Popover.Root>
+            <Popover.Root modal>
                 <Popover.Trigger asChild>{children}</Popover.Trigger>
                 <Popover.Portal>
                     <Popover.Content

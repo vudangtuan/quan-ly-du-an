@@ -1,9 +1,8 @@
 import React from "react";
-import {useNavigate, useOutletContext} from "react-router-dom";
+import {useOutletContext} from "react-router-dom";
 
 import {
     Archive,
-    ArrowRight,
     CheckCircle2,
     Edit, Loader2, MessageSquare,
     PlusCircle,
@@ -11,7 +10,7 @@ import {
     Trash2, Undo,
 } from "lucide-react";
 import type {ProjectDetailContext} from "@/features/project_details";
-import type {Activity, ChangeLog} from "@/shared/types";
+import type {Activity} from "@/shared/types";
 import {Avatar} from "@/shared/components";
 import {formatDateLocalDate} from "@/utils";
 
@@ -26,17 +25,17 @@ export const ProjectActivity: React.FC = () => {
                     Hoạt động gần đây
                 </h3>
             </div>
-            <div className={"h-100 flex flex-col overflow-auto"}>
+            <div className={"h-100 flex flex-col overflow-auto scrollbar-thin"}>
                 {activityStream.activities.map((activity: Activity) => (
                     <ActivityItem key={activity.id} activity={activity}></ActivityItem>
                 ))}
                 {activityStream.hasNextPage &&
-                    <div className="flex items-center justify-center p-4">
+                    <div className="flex items-center justify-center py-2">
                         <button
                             onClick={activityStream.fetchNextPage}
-                            className="group relative px-6 py-2.5 font-medium text-blue-600 transition-all duration-200 hover:text-blue-700">
+                            className="group relative px-3 py-1 font-medium text-blue-600 transition-all duration-200 hover:text-blue-700">
                             {activityStream.isFetchingNextPage ? <Loader2 className="h-5 w-5 animate-spin"/> :
-                                <span className="relative z-10">Tải thêm</span>}
+                                <span className="relative z-10 text-xs">Xem thêm</span>}
                             <div
                                 className="absolute inset-0 rounded-lg bg-blue-50 opacity-0 transition-opacity duration-200 group-hover:opacity-100"/>
                         </button>
@@ -68,18 +67,8 @@ const getActionIcon = (actionType: string) => {
 };
 
 export const ActivityItem: React.FC<ActivityItemProps> = ({activity}) => {
-    const changes = activity.metadata?.changes as ChangeLog[] | undefined;
-    const navigate = useNavigate();
     return (
-        <div onDoubleClick={() => {
-            if (activity.taskId) {
-                navigate(`/projects/${activity.projectId}/kanban?taskId=${activity.taskId}`);
-            } else {
-                navigate(`/projects/${activity.projectId}`);
-            }
-        }}
-             title={"xem chi tiết"}
-             className="flex gap-3 p-2 text-xs border-b border-gray-50 hover:bg-gray-50 transition-colors group animate-in fade-in slide-in-from-top-1 duration-300">
+        <div className="flex gap-3 p-2 text-xs border-b border-gray-50 hover:bg-gray-50 transition-colors group animate-in fade-in slide-in-from-top-1 duration-300">
             {/* Avatar & Icon */}
             <div className="relative flex-shrink-0 mt-1 h-fit">
                 <Avatar userId={activity.actorId} fullName={activity.actorName} className="h-7 w-7"/>
@@ -95,36 +84,11 @@ export const ActivityItem: React.FC<ActivityItemProps> = ({activity}) => {
                     <span className="font-semibold">{activity.actorName}</span>
                     {' '}{activity.description}{' '}
                     {activity.targetName && (
-                        <span className="font-medium text-blue-600 hover:underline cursor-pointer">
+                        <span className="font-medium text-blue-500">
                             {activity.targetName}
                         </span>
                     )}
                 </div>
-
-                {/* Body: Danh sách thay đổi (Generic Rendering) */}
-                {changes && changes.length > 0 && (
-                    <div className="mt-2 space-y-1">
-                        {changes.map((change, idx) => (
-                            <div key={idx}
-                                 className="text-xs flex items-center gap-1.5 text-gray-600 bg-white border border-gray-200 rounded px-2 py-1 w-fit max-w-full">
-                                <span className="font-semibold text-gray-700 flex-shrink-0">{change.field}:</span>
-
-                                <span
-                                    className={`truncate max-w-[100px] ${!change.old ? 'italic text-gray-400' : 'line-through text-gray-400'}`}>
-                                    {change.old || 'Trống'}
-                                </span>
-
-                                <ArrowRight className="h-3 w-3 text-gray-400 flex-shrink-0"/>
-
-                                <span
-                                    className={`truncate max-w-[150px] font-medium ${!change.new ? 'italic text-gray-400' : 'text-green-700'}`}>
-                                    {change.new || 'Trống'}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
-                )}
-
                 {/* Footer: Thời gian */}
                 <div className="mt-1 text-[10px] text-gray-400">
                     {formatDateLocalDate(activity.createdAt)}

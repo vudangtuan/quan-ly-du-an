@@ -2,7 +2,7 @@ import React, {useMemo, useState} from "react";
 import {useAuthStore} from "@/store";
 import {useQuery} from "@tanstack/react-query";
 import {TaskService} from "@/shared/services";
-import {formatDate, isOverdue, PRIORITY_CONFIG, QUERY_GC_TIME, QUERY_STALE_TIME} from "@/utils";
+import {formatDate, isOverdue, PRIORITY_CONFIG} from "@/utils";
 import {
     useReactTable,
     getCoreRowModel,
@@ -36,7 +36,7 @@ export const MyTasksPage: React.FC = () => {
 
 
     const [grouping, setGrouping] = useState<GroupingState>(["projectId"]);
-    const [expanded, setExpanded] = useState<ExpandedState>({});
+    const [expanded, setExpanded] = useState<ExpandedState>(true);
 
     const columns = useMemo(() => [
         columnHelper.accessor("projectId", {

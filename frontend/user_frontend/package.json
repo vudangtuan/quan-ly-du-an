@@ -35,14 +35,18 @@
     "react-datepicker": "^8.10.0",
     "react-dom": "^19.2.0",
     "react-hot-toast": "^2.6.0",
+    "react-markdown": "^10.1.0",
     "react-mentions": "^4.4.10",
     "react-router-dom": "^7.9.5",
+    "rehype-highlight": "^7.0.2",
+    "remark-gfm": "^4.0.1",
     "tailwindcss": "^4.1.17",
     "tailwindcss-animate": "^1.0.7",
     "zustand": "^5.0.8"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@tailwindcss/typography": "^0.5.19",
     "@types/event-source-polyfill": "^1.0.5",
     "@types/lodash": "^4.17.21",
     "@types/node": "^24.10.1",

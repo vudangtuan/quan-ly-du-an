@@ -7,6 +7,8 @@ import com.google.api.client.json.gson.GsonFactory;
 import com.tuanhust.authservice.config.UserPrincipal;
 import com.tuanhust.authservice.entity.Session;
 import com.tuanhust.authservice.entity.User;
+import com.tuanhust.authservice.event.ActivityEvent;
+import com.tuanhust.authservice.event.ActivityType;
 import com.tuanhust.authservice.provider.JwtTokenProvider;
 import com.tuanhust.authservice.repository.UserRepository;
 import com.tuanhust.authservice.repsonse.AuthResponse;
@@ -21,6 +23,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -29,10 +32,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 
 import java.time.Instant;
-import java.util.Collections;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 
 @Service
@@ -46,17 +46,19 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final SessionService sessionService;
+    private final ApplicationEventPublisher eventPublisher;
 
 
     @Override
+    @Transactional(readOnly = true)
     public AuthResponse login(LoginRequest loginRequest, HttpServletRequest request) {
         User user = userRepository.findByEmail(loginRequest.getEmail()).orElseThrow(
-                () -> new ResponseStatusException(HttpStatus.NOT_FOUND,"Email not found"));
-        if(!passwordEncoder.matches(loginRequest.getPassword(),user.getPasswordHash())){
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,"Wrong Password");
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Email not found"));
+        if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPasswordHash())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Wrong Password");
         }
-        if(user.getStatus() != User.UserStatus.ACTIVE){
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN,"User is "+user.getStatus());
+        if (user.getStatus() != User.UserStatus.ACTIVE) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is " + user.getStatus());
         }
 
         String sessionId = UUID.randomUUID().toString();
@@ -65,19 +67,27 @@ public class AuthServiceImpl implements AuthService {
         Session session = getSession(request, user.getUserId(), sessionId, refreshToken);
         sessionService.createSession(session);
 
-        log.info("User logged in successfully: {}", user.getEmail());
+        Map<String, Object> data = new HashMap<>();
+        data.put("device", session.getDeviceInfo());
+        data.put("ipAddress", session.getIpAddress());
+
+        eventPublisher.publishEvent(new ActivityEvent(
+                user.getUserId(), user.getFullName(), user.getEmail(),
+                ActivityType.LOGIN, "đã đăng nhập", data,
+                Instant.now()
+        ));
 
         return userMapToAuthResponse(user, sessionId, refreshToken);
     }
 
 
     @Override
-    public AuthResponse refreshToken(String refreshToken,String accessToken) {
+    public AuthResponse refreshToken(String refreshToken, String accessToken) {
         Claims claims = jwtTokenProvider.getClaimsFromExpiredToken(accessToken);
         String sessionId = claims.get("sessionId", String.class);
         String email = claims.getSubject();
 
-        if(!sessionService.validateSessionWithRefreshToken(sessionId,refreshToken)){
+        if (!sessionService.validateSessionWithRefreshToken(sessionId, refreshToken)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "Session is invalid or expired");
         }
@@ -87,12 +97,19 @@ public class AuthServiceImpl implements AuthService {
         String newRefreshToken = jwtTokenProvider.generateRefreshToken();
         sessionService.updateSession(sessionId, newRefreshToken);
 
-        return userMapToAuthResponse(user,sessionId,newRefreshToken);
+        return userMapToAuthResponse(user, sessionId, newRefreshToken);
     }
 
     @Override
-    public void logout(UserPrincipal userPrincipal) {
-        sessionService.deleteSession(userPrincipal.getUserId(),userPrincipal.getSessionId());
+    @Transactional
+    public void logout(UserPrincipal user) {
+        sessionService.deleteSession(user.getUserId(), user.getSessionId());
+
+        eventPublisher.publishEvent(new ActivityEvent(
+                user.getUserId(), user.getFullName(), user.getEmail(),
+                ActivityType.LOGOUT, "đã đăng xuất", Map.of(),
+                Instant.now()
+        ));
     }
 
 
@@ -115,14 +132,27 @@ public class AuthServiceImpl implements AuthService {
             String name = (String) payload.get("name");
             String userIdFromGoogle = payload.getSubject();
 
-            User user = userRepository.findByEmail(email).orElseGet(() -> userRepository.save(User.builder()
-                    .email(email)
-                    .fullName(name)
-                    .oauthProvider(User.OAuthProvider.GOOGLE)
-                    .oauthProviderId(userIdFromGoogle)
-                    .role(User.Role.USER)
-                    .status(User.UserStatus.ACTIVE)
-                    .build()));
+            User user = userRepository.findByEmail(email).orElseGet(() -> {
+
+                User savedUser = userRepository.save(User.builder()
+                        .email(email)
+                        .fullName(name)
+                        .oauthProvider(User.OAuthProvider.GOOGLE)
+                        .oauthProviderId(userIdFromGoogle)
+                        .role(User.Role.USER)
+                        .status(User.UserStatus.ACTIVE)
+                        .build());
+
+
+                eventPublisher.publishEvent(new ActivityEvent(
+                        savedUser.getUserId(), savedUser.getFullName(), savedUser.getEmail(),
+                        ActivityType.CREATE_ACCOUNT,
+                        "đã tạo tài khoản mới", Map.of(),
+                        Instant.now()
+                ));
+
+                return savedUser;
+            });
 
             if (user.getStatus() != User.UserStatus.ACTIVE) {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is " + user.getStatus());
@@ -134,12 +164,20 @@ public class AuthServiceImpl implements AuthService {
             Session session = getSession(request, user.getUserId(), sessionId, refreshToken);
             sessionService.createSession(session);
 
-            log.info("User logged in with Google: {}", email);
+
+            Map<String, Object> data = new HashMap<>();
+            data.put("device", session.getDeviceInfo());
+            data.put("ipAddress", session.getIpAddress());
+
+            eventPublisher.publishEvent(new ActivityEvent(
+                    user.getUserId(), user.getFullName(), user.getEmail(),
+                    ActivityType.LOGIN, "đã đăng nhập", data,
+                    Instant.now()
+            ));
 
             return userMapToAuthResponse(user, sessionId, refreshToken);
 
         } catch (Exception e) {
-            log.error("Google login error", e);
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Google Authentication Failed");
         }
     }
@@ -149,10 +187,11 @@ public class AuthServiceImpl implements AuthService {
     public void createPassword(String userId, CreatePassword createPassword) {
         User user = userRepository.findById(userId).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
-        if(!Objects.equals(createPassword.getPassword(), createPassword.getConfirmPassword())){
+        if (!Objects.equals(createPassword.getPassword(), createPassword.getConfirmPassword())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Passwords do not match");
         }
         user.setPasswordHash(passwordEncoder.encode(createPassword.getPassword()));
+
     }
 
     @Override
@@ -160,13 +199,13 @@ public class AuthServiceImpl implements AuthService {
     public void updatePassword(String userId, UpdatePassword updatePassword) {
         User user = userRepository.findById(userId).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
-        if(!Objects.equals(updatePassword.getNewPassword(), updatePassword.getConfirmPassword())){
+        if (!Objects.equals(updatePassword.getNewPassword(), updatePassword.getConfirmPassword())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Passwords do not match");
         }
-        if(!passwordEncoder.matches(updatePassword.getPassword(),user.getPasswordHash())){
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Wrong Password");
+        if (!passwordEncoder.matches(updatePassword.getPassword(), user.getPasswordHash())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Wrong Password");
         }
-        user.setPasswordHash(passwordEncoder.encode(updatePassword.getNewPassword())); 
+        user.setPasswordHash(passwordEncoder.encode(updatePassword.getNewPassword()));
     }
 
 

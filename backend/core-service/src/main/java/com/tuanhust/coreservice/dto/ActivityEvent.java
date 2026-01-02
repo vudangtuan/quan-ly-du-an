@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
+import java.time.Instant;
 import java.util.Map;
 
 @Data
@@ -34,4 +35,6 @@ public class ActivityEvent implements Serializable {
     private String targetId;
 
     private String targetName;
+
+    private Instant createdAt;
 }

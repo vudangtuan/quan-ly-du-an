@@ -1,5 +1,6 @@
 package com.tuanhust.coreservice.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.tuanhust.coreservice.entity.ids.CommentMentionsId;
 import jakarta.persistence.*;
 import lombok.*;

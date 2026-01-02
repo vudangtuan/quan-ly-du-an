@@ -2,3 +2,5 @@
 @plugin "@tailwindcss/forms";
 @plugin "tailwindcss-animate";
 @plugin "tailwind-scrollbar";
+@plugin "@tailwindcss/typography";
+

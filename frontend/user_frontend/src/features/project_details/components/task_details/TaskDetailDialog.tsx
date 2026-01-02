@@ -42,7 +42,7 @@ export const TaskDetailDialog: React.FC = () => {
 
 
     return (
-        <Dialog.Root open={true} onOpenChange={(open) => {
+        <Dialog.Root open={true} modal={false} onOpenChange={(open) => {
             if (!open) {
                 handleClose();
             }
@@ -51,7 +51,7 @@ export const TaskDetailDialog: React.FC = () => {
             <Dialog.Portal>
                 <Dialog.Content
                     aria-describedby=""
-                    className={`fixed right-0 top-0 z-50 h-full w-full sm:w-150 flex flex-col
+                    className={`fixed right-0 top-0 z-40 h-full w-full sm:w-150 flex flex-col
                         bg-white shadow-2xl overflow-hidden
                         data-[state=open]:animate-in data-[state=closed]:animate-out
                         data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right
