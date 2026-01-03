@@ -1,5 +1,4 @@
 import React, {useState} from 'react';
-import {Link} from 'react-router-dom';
 import {Eye, EyeOff, LogIn} from 'lucide-react';
 import {GoogleLogin} from "@react-oauth/google";
 import {useLogin} from "@/features/auth/hooks";
@@ -23,7 +22,7 @@ export const LoginForm: React.FC = () => {
         <div className="w-full max-w-md">
             {/* Tiêu đề */}
             <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900">Chào mừng trở lại!</h1>
+                <h1 className="text-xl font-bold text-gray-900">Hệ thống quản lý công việc</h1>
                 <p className="mt-2 text-gray-500">Đăng nhập vào tài khoản của bạn để tiếp tục.</p>
             </div>
 
@@ -42,7 +41,7 @@ export const LoginForm: React.FC = () => {
                         htmlFor="email"
                         className="text-sm font-medium text-gray-700"
                     >
-                        Địa chỉ Email
+                        Email
                     </label>
                     <input
                         id="email"
@@ -65,12 +64,12 @@ export const LoginForm: React.FC = () => {
                         >
                             Mật khẩu
                         </label>
-                        <Link
-                            to="/forgot-password"
-                            className="text-sm text-blue-600 hover:underline"
-                        >
-                            Quên mật khẩu?
-                        </Link>
+                        {/*<Link*/}
+                        {/*    to="/forgot-password"*/}
+                        {/*    className="text-sm text-blue-600 hover:underline"*/}
+                        {/*>*/}
+                        {/*    Quên mật khẩu?*/}
+                        {/*</Link>*/}
                     </div>
                     <div className="relative">
                         <input
@@ -125,7 +124,7 @@ export const LoginForm: React.FC = () => {
                 <GoogleLogin
                     onSuccess={loginGoogleMutation.mutate}
                     onError={() => setError("Đăng nhập Google thất bại")}
-                    useOneTap={false}
+                    useOneTap={true}
                     theme="outline"
                     size="large"
                     text="signin_with"

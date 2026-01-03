@@ -8,8 +8,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 
 
 @RestController
@@ -37,5 +39,12 @@ public class ActivityController {
         Pageable pageable = PageRequest.of(page, size);
         return ResponseEntity.ok(ApiResponse.success(
                 activityService.getActivitiesByTask(taskId,pageable)));
+    }
+
+    @GetMapping("/user/{userId}")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<ApiResponse<List<Activity>>> getActivitiesByUser(
+            @PathVariable String userId){
+        return ResponseEntity.ok(ApiResponse.success(activityService.getActivitiesByUser(userId)));
     }
 }

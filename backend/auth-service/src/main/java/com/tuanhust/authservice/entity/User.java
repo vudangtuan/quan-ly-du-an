@@ -25,7 +25,6 @@ import java.time.Instant;
                 @Index(name = "idx_email", columnList = "email"),
                 @Index(name = "idx_oauth_provider_id", columnList = "oauth_provider,oauth_provider_id")
         })
-@SQLRestriction("status NOT IN ('DELETED', 'SUSPENDED')")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class User {
     @Id

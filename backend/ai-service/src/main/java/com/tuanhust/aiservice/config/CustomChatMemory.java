@@ -23,10 +23,11 @@ import java.util.List;
 public class CustomChatMemory {
     private final JdbcTemplate jdbcTemplate;
 
+
     public void saveMessage(String userId, String projectId, String role, String content) {
         String sql = """
-                    INSERT INTO project_chat_history (user_id, project_id, role, content)
-                    VALUES (?, ?, ?, ?)
+                    INSERT INTO project_chat_history (user_id, project_id, role, content,created_at)
+                    VALUES (?, ?, ?, ?,clock_timestamp())
                 """;
 
         try {

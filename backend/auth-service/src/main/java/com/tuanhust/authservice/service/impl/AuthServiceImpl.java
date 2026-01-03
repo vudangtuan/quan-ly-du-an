@@ -116,70 +116,66 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public AuthResponse loginWithGoogle(String token, HttpServletRequest request) {
+        GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier
+                .Builder(new NetHttpTransport(), GsonFactory.getDefaultInstance())
+                .setAudience(Collections.singletonList(googleClientId))
+                .build();
+        GoogleIdToken idToken;
         try {
-            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier
-                    .Builder(new NetHttpTransport(), GsonFactory.getDefaultInstance())
-                    .setAudience(Collections.singletonList(googleClientId))
-                    .build();
+            idToken = verifier.verify(token);
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid Google Id token");
+        }
 
-            GoogleIdToken idToken = verifier.verify(token);
-            if (idToken == null) {
-                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid Google Token");
-            }
+        GoogleIdToken.Payload payload = idToken.getPayload();
+        String email = payload.getEmail();
+        String name = (String) payload.get("name");
+        String userIdFromGoogle = payload.getSubject();
 
-            GoogleIdToken.Payload payload = idToken.getPayload();
-            String email = payload.getEmail();
-            String name = (String) payload.get("name");
-            String userIdFromGoogle = payload.getSubject();
+        User user = userRepository.findByEmail(email).orElseGet(() -> {
 
-            User user = userRepository.findByEmail(email).orElseGet(() -> {
+            User savedUser = userRepository.save(User.builder()
+                    .email(email)
+                    .fullName(name)
+                    .oauthProvider(User.OAuthProvider.GOOGLE)
+                    .oauthProviderId(userIdFromGoogle)
+                    .role(User.Role.USER)
+                    .status(User.UserStatus.ACTIVE)
+                    .build());
 
-                User savedUser = userRepository.save(User.builder()
-                        .email(email)
-                        .fullName(name)
-                        .oauthProvider(User.OAuthProvider.GOOGLE)
-                        .oauthProviderId(userIdFromGoogle)
-                        .role(User.Role.USER)
-                        .status(User.UserStatus.ACTIVE)
-                        .build());
-
-
-                eventPublisher.publishEvent(new ActivityEvent(
-                        savedUser.getUserId(), savedUser.getFullName(), savedUser.getEmail(),
-                        ActivityType.CREATE_ACCOUNT,
-                        "đã tạo tài khoản mới", Map.of(),
-                        Instant.now()
-                ));
-
-                return savedUser;
-            });
-
-            if (user.getStatus() != User.UserStatus.ACTIVE) {
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is " + user.getStatus());
-            }
-
-            String sessionId = UUID.randomUUID().toString();
-            String refreshToken = jwtTokenProvider.generateRefreshToken();
-
-            Session session = getSession(request, user.getUserId(), sessionId, refreshToken);
-            sessionService.createSession(session);
-
-
-            Map<String, Object> data = new HashMap<>();
-            data.put("device", session.getDeviceInfo());
-            data.put("ipAddress", session.getIpAddress());
 
             eventPublisher.publishEvent(new ActivityEvent(
-                    user.getUserId(), user.getFullName(), user.getEmail(),
-                    ActivityType.LOGIN, "đã đăng nhập", data,
+                    savedUser.getUserId(), savedUser.getFullName(), savedUser.getEmail(),
+                    ActivityType.CREATE_ACCOUNT,
+                    "đã tạo tài khoản mới", Map.of(),
                     Instant.now()
             ));
 
-            return userMapToAuthResponse(user, sessionId, refreshToken);
+            return savedUser;
+        });
 
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Google Authentication Failed");
+        if (user.getStatus() != User.UserStatus.ACTIVE) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is " + user.getStatus());
         }
+
+        String sessionId = UUID.randomUUID().toString();
+        String refreshToken = jwtTokenProvider.generateRefreshToken();
+
+        Session session = getSession(request, user.getUserId(), sessionId, refreshToken);
+        sessionService.createSession(session);
+
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("device", session.getDeviceInfo());
+        data.put("ipAddress", session.getIpAddress());
+
+        eventPublisher.publishEvent(new ActivityEvent(
+                user.getUserId(), user.getFullName(), user.getEmail(),
+                ActivityType.LOGIN, "đã đăng nhập", data,
+                Instant.now()
+        ));
+
+        return userMapToAuthResponse(user, sessionId, refreshToken);
     }
 
     @Override

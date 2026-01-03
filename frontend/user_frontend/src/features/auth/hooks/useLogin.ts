@@ -5,6 +5,7 @@ import {AuthService} from "@/shared/services";
 import type {CredentialResponse} from "@react-oauth/google";
 
 
+
 export const useLogin = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');

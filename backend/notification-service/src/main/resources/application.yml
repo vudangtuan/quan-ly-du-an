@@ -51,3 +51,12 @@ logging:
   level:
     org.springframework.web: debug
     org.springframework.data.mongodb: debug
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+  endpoint:
+    health:
+      show-details: always

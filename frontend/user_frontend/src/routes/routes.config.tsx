@@ -1,6 +1,6 @@
 import {LoginPage} from '@/features/auth';
 import {Navigate} from "react-router-dom";
-import {MainLayout} from "@/layouts";
+import {AdminLayout, MainLayout} from "@/layouts";
 import {PrivateRoute} from "./PrivateRoute";
 import {PublicRoute} from "./PublicRoute";
 import {NotFoundPage} from "./NotFoundPage";
@@ -13,6 +13,8 @@ import {
 import {TaskDetailDialog} from "@/features/project_details/components";
 import {MyTasksPage} from "@/features/my_tasks";
 import {AcceptInvitePage} from "@/features/ accept-invite";
+import {AdminRoute} from "@/routes/AdminRoute";
+import {AdminDashBoard, AdminSystem, UserDetail, UserManagement} from "@/features/admin";
 
 
 export const routesConfig = [
@@ -55,6 +57,33 @@ export const routesConfig = [
         children: [
             {path: 'login', element: <LoginPage/>}
         ],
+    },
+    {
+        element: <AdminRoute/>,
+        children: [
+            {
+                path: 'admin',
+                element: <AdminLayout/>,
+                children: [
+                    {
+                        path: 'dashboard',
+                        element: <AdminDashBoard/>
+                    },
+                    {
+                        path: 'users',
+                        element: <UserManagement/>
+                    },
+                    {
+                        path: 'users/id/:userId',
+                        element: <UserDetail/>
+                    },
+                    {
+                        path: 'system',
+                        element: <AdminSystem/>
+                    }
+                ]
+            }
+        ]
     },
     {
         path: '*',

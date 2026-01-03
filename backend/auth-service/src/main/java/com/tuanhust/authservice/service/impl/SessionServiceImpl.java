@@ -10,6 +10,8 @@ import org.springframework.stereotype.Service;
 
 
 import java.time.Instant;
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -32,7 +34,7 @@ public class SessionServiceImpl implements SessionService {
     @Override
     public void createSession(Session session) {
         redisTemplate.opsForValue().set(SESSION_PREFIX + session.getSessionId(),
-                session,ttl, TimeUnit.MILLISECONDS);
+                session, ttl, TimeUnit.MILLISECONDS);
         redisTemplate.opsForSet().add(USER_SESSIONS_PREFIX + session.getUserId(),
                 session.getSessionId());
         log.debug("Session created: {} for user: {}", session.getSessionId(), session.getUserId());
@@ -56,7 +58,7 @@ public class SessionServiceImpl implements SessionService {
     }
 
     @Override
-    public void deleteOtherUserSessions(String userId,String currentSessionId) {
+    public void deleteOtherUserSessions(String userId, String currentSessionId) {
         Set<String> sessionIds = getSessionUserIds(userId);
         sessionIds.stream()
                 .filter(sessionId -> !sessionId.equals(currentSessionId))
@@ -84,7 +86,7 @@ public class SessionServiceImpl implements SessionService {
         validateSession(sessionId);
         Optional<Session> sessionOpt = getSession(sessionId);
         Session session = sessionOpt.orElseThrow();
-        if(!session.getRefreshToken().equals(refreshToken)){
+        if (!session.getRefreshToken().equals(refreshToken)) {
             log.debug("Refresh token invalid: {}", refreshToken);
             return false;
         }
@@ -92,15 +94,25 @@ public class SessionServiceImpl implements SessionService {
     }
 
     @Override
-    public void updateSession(String sessionId,String newRefreshToken) {
+    public void updateSession(String sessionId, String newRefreshToken) {
         getSession(sessionId).ifPresent(session -> {
             session.setRefreshToken(newRefreshToken);
             session.setLastAccessedAt(Instant.now());
-            redisTemplate.opsForValue().set(SESSION_PREFIX+sessionId,
-                    session,ttl, TimeUnit.MILLISECONDS);
+            redisTemplate.opsForValue().set(SESSION_PREFIX + sessionId,
+                    session, ttl, TimeUnit.MILLISECONDS);
             log.debug("Session updated: {} for user: {}",
                     session.getSessionId(), session.getUserId());
         });
+    }
+
+    @Override
+    public List<Session> getSessionByUserId(String id) {
+        Set<String> sessionIds = getSessionUserIds(id);
+        return sessionIds.stream().map(s -> getSession(s).orElse(null))
+                .filter(Objects::nonNull)
+                .peek(s -> s.setRefreshToken(null))
+                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
+                .collect(Collectors.toList());
     }
 
     private Set<String> getSessionUserIds(String userId) {
@@ -114,6 +126,7 @@ public class SessionServiceImpl implements SessionService {
                 .map(String::valueOf)
                 .collect(Collectors.toSet());
     }
+
     private Optional<Session> getSession(String sessionId) {
         return Optional.ofNullable((Session) redisTemplate.opsForValue()
                 .get(SESSION_PREFIX + sessionId));

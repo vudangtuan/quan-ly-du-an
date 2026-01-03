@@ -1,17 +1,21 @@
 import React from 'react';
 import {Navigate, Outlet, useSearchParams} from 'react-router-dom';
-import { useAuthStore } from '@/store';
+import {useAuthStore} from '@/store';
 
 
 export const PublicRoute: React.FC = () => {
-    const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+    const {isAuthenticated, userInfo} = useAuthStore();
     const [searchParams] = useSearchParams();
     if (isAuthenticated) {
+
         const redirectUrl = searchParams.get('redirect');
         if (redirectUrl) {
-            return <Navigate to={decodeURIComponent(redirectUrl)} replace />;
+            return <Navigate to={decodeURIComponent(redirectUrl)} replace/>;
         }
-        return <Navigate to="/" replace />;
+        if (userInfo?.role === 'ADMIN') {
+            return <Navigate to="/admin/dashboard" replace/>;
+        }
+        return <Navigate to="/projects" replace/>;
     }
-    return <Outlet />;
+    return <Outlet/>;
 };

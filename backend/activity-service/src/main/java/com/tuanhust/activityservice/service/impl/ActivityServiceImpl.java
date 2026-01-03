@@ -9,6 +9,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -16,9 +19,10 @@ public class ActivityServiceImpl implements ActivityService {
     private final ActivityRepository activityRepository;
 
     @Override
+    @Transactional(readOnly = true)
     public PaginatedResponse<Activity> getActivitiesByProject(String projectId, Pageable pageable) {
-         Page<Activity> page = activityRepository.
-                findByProjectIdOrderByCreatedAtDesc(projectId,pageable);
+        Page<Activity> page = activityRepository.
+                findByProjectIdOrderByCreatedAtDesc(projectId, pageable);
         return PaginatedResponse.<Activity>builder()
                 .first(page.isFirst())
                 .last(page.isLast())
@@ -31,9 +35,10 @@ public class ActivityServiceImpl implements ActivityService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public PaginatedResponse<Activity> getActivitiesByTask(String taskId, Pageable pageable) {
         Page<Activity> page = activityRepository.
-                findByTaskIdOrderByCreatedAtDesc(taskId,pageable);
+                findByTaskIdOrderByCreatedAtDesc(taskId, pageable);
         return PaginatedResponse.<Activity>builder()
                 .first(page.isFirst())
                 .last(page.isLast())
@@ -43,5 +48,11 @@ public class ActivityServiceImpl implements ActivityService {
                 .size(page.getSize())
                 .content(page.getContent())
                 .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Activity> getActivitiesByUser(String userId) {
+        return activityRepository.findByActorIdOrderByCreatedAtDesc(userId);
     }
 }

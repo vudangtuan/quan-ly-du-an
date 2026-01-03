@@ -62,3 +62,11 @@ eureka:
 
 logging.level.org.springframework.ai: DEBUG
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+  endpoint:
+    health:
+      show-details: always
