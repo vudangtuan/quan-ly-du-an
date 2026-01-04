@@ -27,6 +27,13 @@ export interface Session {
     lastAccessedAt: string;
 }
 
+export interface ServiceStatus {
+    name: string;
+    status: 'UP' | 'DOWN';
+    url: string;
+    instances: number;
+}
+
 export const AdminService = {
     getUserStats: async (months: number): Promise<DashboardData> => {
         return privateApi.get('user/stats', {
@@ -56,5 +63,8 @@ export const AdminService = {
     },
     getActivity: async (userId: string): Promise<Activity[]> => {
         return privateApi.get(`activity/user/${userId}`);
+    },
+    getSystemStatus: async (): Promise<ServiceStatus[]> => {
+        return privateApi.get('system/status');
     }
 }
