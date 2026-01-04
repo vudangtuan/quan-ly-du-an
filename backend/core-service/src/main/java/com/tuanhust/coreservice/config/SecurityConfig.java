@@ -1,7 +1,7 @@
 package com.tuanhust.coreservice.config;
 
+import com.tuanhust.coreservice.filters.GatewayFilter;
 import com.tuanhust.coreservice.filters.InternalFilter;
-import com.tuanhust.coreservice.filters.TokenVerificationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,7 +16,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfig {
-    private final TokenVerificationFilter tokenVerificationFilter;
+    private final GatewayFilter gatewayFilter;
     private final InternalFilter internalFilter;
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -29,7 +29,7 @@ public class SecurityConfig {
                 .sessionManagement(s->s.sessionCreationPolicy(
                         SessionCreationPolicy.STATELESS
                 ))
-                .addFilterBefore(tokenVerificationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(gatewayFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(internalFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

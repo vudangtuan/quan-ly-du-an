@@ -22,7 +22,7 @@ public interface UserRepository extends JpaRepository<User, String> {
                         u.userId,u.email,u.fullName)
                         from User u where (u.fullName ilike concat("%",:text,"%")
                         or u.email ilike concat("%",:text,"%")) and u.userId!=:exceptionUserId
-                                    and u.status='ACTIVE'
+                                    and u.status='ACTIVE' and u.role !='ADMIN'
             """)
     Page<UserInfo> searchUsers(String text, Pageable pageable, String exceptionUserId);
 

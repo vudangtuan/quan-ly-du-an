@@ -14,7 +14,7 @@ import {TaskDetailDialog} from "@/features/project_details/components";
 import {MyTasksPage} from "@/features/my_tasks";
 import {AcceptInvitePage} from "@/features/ accept-invite";
 import {AdminRoute} from "@/routes/AdminRoute";
-import {AdminDashBoard, AdminSystem, UserDetail, UserManagement} from "@/features/admin";
+import {AdminSystem, UserDetail, UserManagement} from "@/features/admin";
 
 
 export const routesConfig = [
@@ -66,8 +66,8 @@ export const routesConfig = [
                 element: <AdminLayout/>,
                 children: [
                     {
-                        path: 'dashboard',
-                        element: <AdminDashBoard/>
+                        path: "",
+                        element: <Navigate to="users" replace/>
                     },
                     {
                         path: 'users',

@@ -5,11 +5,7 @@ spring:
     mongodb:
       uri: ${SPRING_DATA_MONGODB_URI:mongodb://localhost:27017/activity_db}
       auto-index-creation: true
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-  cache:
-    type: redis
+
   rabbitmq:
     host: ${SPRING_RABBITMQ_HOST:localhost}
     port: ${SPRING_RABBITMQ_PORT:5672}
@@ -22,9 +18,6 @@ spring:
           initial-interval: 3000
           max-attempts: 3
           multiplier: 2
-
-jwt:
-  public-key-path: classpath:keys/public_key.pem
 
 server:
   port: 8002

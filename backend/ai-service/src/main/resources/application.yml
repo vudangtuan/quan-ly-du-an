@@ -48,8 +48,7 @@ spring:
           max-attempts: 3
           multiplier: 2
 
-jwt:
-  public-key-path: classpath:keys/public_key.pem
+
 internal:
   secret-key: ${INTERNAL_SECRET_KEY:dHXhuqVuMjAyMTQxMzM=}
 server:

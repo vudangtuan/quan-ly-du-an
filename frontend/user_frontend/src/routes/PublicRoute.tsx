@@ -13,7 +13,7 @@ export const PublicRoute: React.FC = () => {
             return <Navigate to={decodeURIComponent(redirectUrl)} replace/>;
         }
         if (userInfo?.role === 'ADMIN') {
-            return <Navigate to="/admin/dashboard" replace/>;
+            return <Navigate to="/admin" replace/>;
         }
         return <Navigate to="/projects" replace/>;
     }

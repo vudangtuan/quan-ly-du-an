@@ -1,6 +1,10 @@
 spring:
   application:
     name: api-gateway
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
 
 
   cloud:
@@ -18,19 +22,26 @@ spring:
               uri: lb://core-service
               predicates:
                 - Path=/api/project/**,/api/tasks/**
+              filters:
+                - JwtAuthenticationFilter
             - id: activity-service
               uri: lb://activity-service
               predicates:
                 - Path=/api/activity/**
+              filters:
+                - JwtAuthenticationFilter
             - id: notification-service
               uri: lb://notification-service
               predicates:
                 - Path=/api/notifications/**
+              filters:
+                - JwtAuthenticationFilter
             - id: ai-service
               uri: lb://ai-service
               predicates:
                 - Path=/api/ai/**
-
+              filters:
+                - JwtAuthenticationFilter
 
 eureka:
   client:

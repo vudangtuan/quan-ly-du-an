@@ -1,7 +1,7 @@
 package com.tuanhust.notificationservice.config;
 
 
-import com.tuanhust.notificationservice.filter.TokenVerificationFilter;
+import com.tuanhust.notificationservice.filter.GatewayFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,7 +16,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfig {
-    private final TokenVerificationFilter tokenVerificationFilter;
+    private final GatewayFilter gatewayFilter;
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
@@ -27,7 +27,7 @@ public class SecurityConfig {
                 .sessionManagement(s->s.sessionCreationPolicy(
                         SessionCreationPolicy.STATELESS
                 ))
-                .addFilterBefore(tokenVerificationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(gatewayFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

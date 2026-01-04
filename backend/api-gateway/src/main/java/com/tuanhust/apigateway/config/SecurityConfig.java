@@ -1,10 +1,8 @@
-package com.tuanhust.apigateway;
+package com.tuanhust.apigateway.config;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -18,7 +16,6 @@ import org.springframework.security.web.server.context.NoOpServerSecurityContext
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.reactive.CorsConfigurationSource;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
-import org.springframework.web.reactive.config.CorsRegistry;
 import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
@@ -39,42 +36,10 @@ public class SecurityConfig {
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
                 .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
-                .exceptionHandling(exceptionHandlingSpec ->
-                        exceptionHandlingSpec.authenticationEntryPoint(
-                                new HttpStatusServerEntryPoint(HttpStatus.UNAUTHORIZED)))
-                .addFilterAt(bearerAuthenticationFilter(jwtReactiveAuthenticationManager()),
-                        SecurityWebFiltersOrder.AUTHENTICATION)
                 .authorizeExchange(exchange -> exchange
-                        .pathMatchers("/api/auth/login",
-                                "/api/auth/refresh",
-                                "/api/auth/google").permitAll()
-                        .anyExchange().authenticated()
+                        .anyExchange().permitAll()
                 );
         return http.build();
-    }
-
-    @Bean
-    ReactiveAuthenticationManager jwtReactiveAuthenticationManager() {
-        return Mono::just;
-    }
-    @Bean
-    AuthenticationWebFilter bearerAuthenticationFilter(ReactiveAuthenticationManager manager) {
-        AuthenticationWebFilter bearerFilter = new AuthenticationWebFilter(manager);
-
-        // Tắt việc lưu context bảo mật (vì là API Stateless)
-        bearerFilter.setSecurityContextRepository(NoOpServerSecurityContextRepository.getInstance());
-
-        // Định nghĩa cách lấy thông tin xác thực từ request (chỉ cần lấy Bearer Token)
-        bearerFilter.setServerAuthenticationConverter(exchange -> {
-            String authHeader = exchange.getRequest().getHeaders().getFirst("Authorization");
-            if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                String token = authHeader.substring(7);
-                // Tạo một đối tượng Authentication giả (dummy) với Token là Principal
-                return Mono.just(new UsernamePasswordAuthenticationToken(token, null, Collections.emptyList()));
-            }
-            return Mono.empty();
-        });
-        return bearerFilter;
     }
 
     @Bean

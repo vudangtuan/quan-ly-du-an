@@ -1,13 +1,12 @@
 
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, Activity, LogOut, Shield } from 'lucide-react';
+import { Users, Activity, LogOut, Shield } from 'lucide-react';
 
 
 export const AdminSidebar: React.FC = () => {
 
     const navItems = [
-        { icon: LayoutDashboard, label: 'Dashboard', path: '/admin/dashboard' },
         { icon: Users, label: 'Quản lý Users', path: '/admin/users' },
         { icon: Activity, label: 'Hệ thống', path: '/admin/system' },
     ];

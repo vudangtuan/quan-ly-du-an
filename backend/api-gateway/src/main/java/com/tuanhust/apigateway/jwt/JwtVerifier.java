@@ -1,4 +1,4 @@
-package com.tuanhust.activityservice.jwt;
+package com.tuanhust.apigateway.jwt;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -17,7 +17,7 @@ import java.util.Base64;
 
 @Component
 public class JwtVerifier {
-    @Value("${jwt.public-key-path}")
+    @Value("classpath:keys/public_key.pem")
     private Resource publicKeyPath;
     private PublicKey publicKey;
 
