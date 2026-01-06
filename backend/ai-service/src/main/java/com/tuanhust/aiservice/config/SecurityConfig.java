@@ -23,6 +23,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorizeRequests ->
                         authorizeRequests
                                 .requestMatchers("/internal/**").permitAll()
+                                .requestMatchers("/actuator/**").permitAll()
                                 .anyRequest().authenticated())
                 .sessionManagement(s->s.sessionCreationPolicy(
                         SessionCreationPolicy.STATELESS

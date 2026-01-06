@@ -2,8 +2,8 @@ spring:
   application:
     name: notification-service
   mail:
-    host: smtp-relay.brevo.com
-    port: 587
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT}
     username: ${MAIL_SENDER_USERNAME}
     password: ${MAIL_SENDER_PASSWORD}
     properties:
@@ -13,6 +13,7 @@ spring:
           starttls:
             enable: true
     from-mail: ${MAIL_SENDER}
+    from-name: ${MAIL_NAME}
 
   data:
     mongodb:
@@ -20,10 +21,10 @@ spring:
       auto-index-creation: true
 
   rabbitmq:
-    host: ${SPRING_RABBITMQ_HOST:localhost}
-    port: ${SPRING_RABBITMQ_PORT:5672}
-    username: ${SPRING_RABBITMQ_USERNAME:guest}
-    password: ${SPRING_RABBITMQ_PASSWORD:guest}
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
     listener:
       simple:
         retry:
@@ -39,8 +40,6 @@ eureka:
 server:
   port: 8003
 
-jwt:
-  public-key-path: classpath:keys/public_key.pem
 
 logging:
   level:
@@ -51,7 +50,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health, info
+        include: health, info, metrics
   endpoint:
     health:
       show-details: always

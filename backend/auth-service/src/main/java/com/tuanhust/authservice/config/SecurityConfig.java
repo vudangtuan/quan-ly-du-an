@@ -31,7 +31,8 @@ public class SecurityConfig {
                     auth.requestMatchers("/auth/login",
                                     "/auth/refresh",
                                     "/internal/**",
-                                    "/auth/google").permitAll()
+                                    "/auth/google",
+                                    "/actuator/**").permitAll()
                             .anyRequest().authenticated();
                 })
                 .formLogin(AbstractHttpConfigurer::disable)

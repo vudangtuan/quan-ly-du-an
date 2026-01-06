@@ -24,6 +24,8 @@ public class EmailChannel implements NotificationChannel {
     @Value("${spring.mail.from-mail}")
     private String fromEmail;
 
+    @Value("${spring.mail.from-name}")
+    private String fromName;
 
 
     @Override
@@ -38,7 +40,7 @@ public class EmailChannel implements NotificationChannel {
             MimeMessageHelper helper = new MimeMessageHelper(
                     message, true, "UTF-8");
 
-            helper.setFrom(fromEmail);
+            helper.setFrom(fromEmail, fromName);
             helper.setTo(event.getRecipient());
             helper.setSubject(event.getSubject());
 

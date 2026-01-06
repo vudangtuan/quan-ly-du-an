@@ -57,7 +57,7 @@ public class GatewayFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getServletPath();
-        return path.startsWith("/internal/");
+        return !path.startsWith("/activity");
     }
 
     @Override

@@ -2,12 +2,16 @@ package com.tuanhust;
 
 // RSA Key Generator - Chạy file Java này để sinh keys
 import java.io.FileOutputStream;
+import java.math.BigInteger;
 import java.security.*;
+import java.util.AbstractCollection;
 import java.util.Base64;
 import java.nio.file.*;
 
 public class RsaKeyGenerator {
 
+
+    
     public static void main(String[] args) throws Exception {
         // Generate RSA key pair
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");

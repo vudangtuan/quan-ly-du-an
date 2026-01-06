@@ -1,24 +1,19 @@
 spring:
   application:
     name: ai-service
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-  cache:
-    type: redis
+
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/ai_db}
-    username: ${DB_USERNAME:tuan}
-    password: ${DB_PASSWORD:1234}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
   ai:
     openai:
-      api-key: ${OPENROUTER_API_KEY}
-      base-url: ${OPENROUTER_BASE_URL}
+      api-key: ${API_KEY}
+      base-url: ${BASE_URL}
       chat:
         options:
-          model: ${OPENROUTER_MODEL}
+          model: ${MODEL}
           temperature: 0.2
     vectorstore:
       pgvector:
@@ -36,10 +31,10 @@ spring:
             schema: classpath:schema.sql
 
   rabbitmq:
-    host: ${SPRING_RABBITMQ_HOST:localhost}
-    port: ${SPRING_RABBITMQ_PORT:5672}
-    username: ${SPRING_RABBITMQ_USERNAME:guest}
-    password: ${SPRING_RABBITMQ_PASSWORD:guest}
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
     listener:
       simple:
         retry:
@@ -50,7 +45,7 @@ spring:
 
 
 internal:
-  secret-key: ${INTERNAL_SECRET_KEY:dHXhuqVuMjAyMTQxMzM=}
+  secret-key: ${INTERNAL_SECRET_KEY}
 server:
   port: 8004
 
@@ -65,7 +60,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health, info
+        include: health, info, metrics
   endpoint:
     health:
       show-details: always

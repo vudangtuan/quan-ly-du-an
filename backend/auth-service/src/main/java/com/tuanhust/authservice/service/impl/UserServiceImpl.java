@@ -1,14 +1,10 @@
 package com.tuanhust.authservice.service.impl;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tuanhust.authservice.config.UserPrincipal;
-import com.tuanhust.authservice.entity.Session;
 import com.tuanhust.authservice.entity.User;
 import com.tuanhust.authservice.event.ActivityEvent;
 import com.tuanhust.authservice.event.ActivityType;
 import com.tuanhust.authservice.repository.UserRepository;
-import com.tuanhust.authservice.repsonse.UserDashboardResponse;
 import com.tuanhust.authservice.repsonse.UserInfo;
 import com.tuanhust.authservice.service.SessionService;
 import com.tuanhust.authservice.service.UserService;
@@ -21,7 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -83,28 +78,6 @@ public class UserServiceImpl implements UserService {
                 .build();
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public UserDashboardResponse getUserStats(int months) {
-        long totalUsers = userRepository.count();
-        Instant startDate = ZonedDateTime.now().minusMonths(months).toInstant();
-
-        String sqlFormat = (months <= 1) ? "YYYY-MM-DD" : "YYYY-MM";
-
-        List<Object[]> rawGrowth = userRepository.getUserGrowth(startDate, sqlFormat);
-
-        List<UserDashboardResponse.UserGrowthData> chartData = rawGrowth.stream()
-                .map(obj -> UserDashboardResponse.UserGrowthData.builder()
-                        .group((String) obj[0])
-                        .count(((Number) obj[1]).longValue())
-                        .build())
-                .toList();
-
-        return UserDashboardResponse.builder()
-                .totalUsers(totalUsers)
-                .growthChart(chartData)
-                .build();
-    }
 
     @Override
     @Transactional(readOnly = true)

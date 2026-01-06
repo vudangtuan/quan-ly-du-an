@@ -17,7 +17,7 @@ import java.util.Base64;
 
 @Component
 public class JwtVerifier {
-    @Value("classpath:keys/public_key.pem")
+    @Value("${JWT_PUBLIC_KEY_PATH}")
     private Resource publicKeyPath;
     private PublicKey publicKey;
 

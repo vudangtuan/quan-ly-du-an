@@ -24,7 +24,7 @@ public class SecurityConfig {
                 .cors(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorizeRequests ->
                         authorizeRequests
-                                .requestMatchers("/internal/**").permitAll()
+                                .requestMatchers("/internal/**","/actuator/**").permitAll()
                                 .anyRequest().authenticated())
                 .sessionManagement(s->s.sessionCreationPolicy(
                         SessionCreationPolicy.STATELESS
