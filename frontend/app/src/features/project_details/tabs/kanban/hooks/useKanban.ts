@@ -7,8 +7,7 @@ import {
     type DragOverEvent,
     type DragStartEvent,
     type Modifier,
-    PointerSensor,
-    useSensor,
+    PointerSensor, useSensor,
     useSensors
 } from "@dnd-kit/core";
 import {arrayMove} from "@dnd-kit/sortable";
@@ -326,9 +325,11 @@ export const useKanban = (
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: {
-                distance: 10
+                distance: 10,
+                delay: 200,
+                tolerance: 5
             }
-        }),
+        })
     );
 
     const customCollisionDetection: CollisionDetection = useCallback((args) => {

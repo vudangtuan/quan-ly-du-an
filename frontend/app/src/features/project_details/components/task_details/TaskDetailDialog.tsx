@@ -42,7 +42,7 @@ export const TaskDetailDialog: React.FC = () => {
 
 
     return (
-        <Dialog.Root open={true} modal={false} onOpenChange={(open) => {
+        <Dialog.Root open={true} modal onOpenChange={(open) => {
             if (!open) {
                 handleClose();
             }

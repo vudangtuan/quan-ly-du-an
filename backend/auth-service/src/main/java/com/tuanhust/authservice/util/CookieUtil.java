@@ -47,7 +47,7 @@ public class CookieUtil {
                         timeToLive,
                         cookieSecure ? "Secure;" : "",
                         cookieSameSite));
-        log.debug("Add cookie to response");
+        log.info("Add cookie to response");
 
     }
 

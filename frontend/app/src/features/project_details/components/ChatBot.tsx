@@ -1,5 +1,5 @@
 import React, {useLayoutEffect, useMemo, useRef, useState} from "react";
-import {Bot, Loader2, Send, Sparkles} from "lucide-react";
+import {Bot, Loader2, Send, Sparkles, X} from "lucide-react";
 import * as Popover from "@radix-ui/react-popover";
 import {useInfiniteQuery, useMutation} from "@tanstack/react-query";
 import {ChatService, type Message} from "@/shared/services";
@@ -22,10 +22,9 @@ export const ChatBot: React.FC<ChatBotProps> = ({project}) => {
     }, [project]);
     const userId = useAuthStore(state => state.userInfo!.userId);
 
-
     const [newMessages, setNewMessages] = useState<Message[]>([]);
     const [inputValue, setInputValue] = useState("");
-
+    const [isOpen, setIsOpen] = useState(false); // Quản lý state mở/đóng để xử lý UX tốt hơn
 
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const prevScrollHeightRef = useRef<number>(0);
@@ -84,12 +83,10 @@ export const ChatBot: React.FC<ChatBotProps> = ({project}) => {
     useLayoutEffect(() => {
         if (!scrollContainerRef.current) return;
 
-        // Nếu load tin cũ: Giữ thanh cuộn đứng yên
         if (isFetchingNextPage && prevScrollHeightRef.current > 0) {
             const newScrollHeight = scrollContainerRef.current.scrollHeight;
             scrollContainerRef.current.scrollTop = newScrollHeight - prevScrollHeightRef.current;
         }
-        // Nếu có tin mới: Scroll xuống đáy
         else if (newMessages.length > 0 && !isFetchingNextPage) {
             messagesEndRef.current?.scrollIntoView({behavior: "smooth"});
         }
@@ -117,28 +114,35 @@ export const ChatBot: React.FC<ChatBotProps> = ({project}) => {
     };
 
     return (
-        <Popover.Root modal onOpenChange={open => {
-            if (open) {
-                setTimeout(() => {
-                    messagesEndRef.current?.scrollIntoView({behavior: "instant"});
-                }, 0);
-            }
-        }}>
+        <Popover.Root
+            open={isOpen}
+            onOpenChange={(open) => {
+                setIsOpen(open);
+                if (open) {
+                    setTimeout(() => {
+                        messagesEndRef.current?.scrollIntoView({behavior: "instant"});
+                    }, 0);
+                }
+            }}
+        >
             <Popover.Trigger asChild>
-                <div className="group fixed bottom-6 right-6 z-50">
-                    <div className={"relative"}>
-                        <div className="bg-white p-2 rounded shadow-xl border group-hover:block
+                <div className="group fixed bottom-4 right-4 md:bottom-6 md:right-6 z-10">
+                    <div className="relative">
+                        <div className="hidden md:group-hover:block bg-white p-2 rounded shadow-xl border
                                 border-gray-200 absolute w-max -top-10 right-0
                                 transition-all duration-300 animate-in fade-in slide-in-from-bottom-2
-                                hidden after:content-[''] after:absolute after:top-full after:right-5
-                                after:border-8 after:border-transparent after:border-t-white">
+                                opacity-0 group-hover:opacity-100 after:content-[''] after:absolute
+                                after:top-full after:right-5 after:border-8 after:border-transparent after:border-t-white">
                             <div className="text-xs font-semibold text-gray-600">
                                 Xin chào. Tôi là trợ lý AI dự án
                             </div>
                         </div>
                         <button
-                            className=" p-3 rounded-full bg-white border border-gray-200 shadow-lg hover:bg-gray-100 active:scale-95">
-                            <Bot className="h-8 w-8"/>
+                            className={`p-3 rounded-full border shadow-lg active:scale-95 transition-all
+                                ${isOpen ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-gray-200 text-gray-700'}
+                            `}
+                        >
+                            {isOpen ? <X className="h-6 w-6" /> : <Bot className="h-6 w-6"/>}
                         </button>
                     </div>
                 </div>
@@ -146,21 +150,42 @@ export const ChatBot: React.FC<ChatBotProps> = ({project}) => {
 
             <Popover.PopoverPortal>
                 <Popover.Content
-                    className="w-xl rounded bg-white shadow-2xl border border-gray-300
-                               outline-none overflow-hidden flex flex-col h-[400px]
-                               data-[state=open]:animate-in data-[state=open]:fade-in data-[state=open]:zoom-in-95 data-[state=open]:slide-in-from-bottom-2
-                               data-[state=closed]:animate-out data-[state=closed]:fade-out data-[state=closed]:zoom-out-95"
-                    side="top" align="end" sideOffset={5}
+                    className="
+                        z-50 rounded bg-white shadow-2xl border border-gray-300
+                        outline-none overflow-hidden flex flex-col
+                        w-[calc(100vw-32px)] h-[75vh]
+                        max-w-md
+                        data-[state=open]:animate-in data-[state=open]:fade-in data-[state=open]:zoom-in-95 data-[state=open]:slide-in-from-bottom-2
+                        data-[state=closed]:animate-out data-[state=closed]:fade-out data-[state=closed]:zoom-out-95
+                    "
+                    side="top"
+                    align="end"
+                    sideOffset={10}
+                    avoidCollisions={true}
+                    onOpenAutoFocus={(e) => e.preventDefault()}
                 >
-                    {/* Body List Tin nhắn */}
+                    <div className="flex items-center justify-between p-3 border-b border-gray-800 bg-gray-900 text-white">
+                        <span className="font-semibold flex items-center gap-2">
+                            <Sparkles size={16} className="text-blue-400"/>
+                            Trợ lý AI
+                        </span>
+                        <Popover.Close asChild>
+                            <button className="text-gray-400 hover:text-white transition-colors rounded-full p-1 hover:bg-gray-800">
+                                <X size={20} />
+                            </button>
+                        </Popover.Close>
+                    </div>
+
                     <div
                         ref={scrollContainerRef}
                         onScroll={handleScroll}
-                        className="flex-1 overflow-y-auto p-4 bg-gray-200 space-y-5 scrollbar-thin relative" // Thêm relative
+                        className="flex-1 overflow-y-auto p-4 bg-gray-50 space-y-4 scrollbar-thin relative"
                     >
                         {isFetchingNextPage && (
-                            <div className="flex justify-center py-2 absolute top-0 left-0 w-full z-10">
-                                <Loader2 className="animate-spin text-gray-500 w-4 h-4"/>
+                            <div className="flex justify-center py-2 absolute top-0 left-0 w-full z-10 pointer-events-none">
+                                <div className="bg-white/80 p-1 rounded-full shadow-sm backdrop-blur-sm">
+                                    <Loader2 className="animate-spin text-blue-500 w-4 h-4"/>
+                                </div>
                             </div>
                         )}
 
@@ -172,22 +197,23 @@ export const ChatBot: React.FC<ChatBotProps> = ({project}) => {
                                 }`}
                             >
                                 <div className={`
-                                        relative p-2 shadow-sm text-sm
+                                        relative p-3 shadow-sm text-sm
                                         ${msg.role === 'user'
-                                    ? 'bg-blue-600 text-white rounded max-w-[85%]'
-                                    : 'bg-white text-gray-800 border border-gray-200 rounded w-full'
+                                    ? 'bg-blue-600 text-white rounded-2xl rounded-tr-sm max-w-[85%]'
+                                    : 'bg-white text-gray-800 border border-gray-200 rounded-2xl rounded-tl-sm w-full md:max-w-[90%]'
                                 }
                                 `}>
                                     {msg.role === 'assistant' ? (
                                         <>
-                                            <div className="flex items-center mb-1">
+                                            <div className="flex items-center mb-2 gap-2">
                                                 <div className="p-1 bg-blue-100 rounded-full">
                                                     <Sparkles size={12} className="text-blue-600"/>
                                                 </div>
+                                                <span className="text-xs font-semibold text-gray-500">AI Assistant</span>
                                             </div>
-                                            <div className="prose prose-sm max-w-none prose-pre:whitespace-pre-wrap
-                                                            prose-pre:text-sm prose-pre:break-words
-                                                            prose-code:text-sm">
+                                            <div className="prose prose-sm max-w-none
+                                                            prose-pre:whitespace-pre-wrap prose-pre:bg-gray-800 prose-pre:text-gray-100
+                                                            prose-code:text-xs md:prose-code:text-sm">
                                                 <ReactMarkdown
                                                     remarkPlugins={[remarkGfm]}
                                                     rehypePlugins={[rehypeHighlight]}
@@ -198,7 +224,7 @@ export const ChatBot: React.FC<ChatBotProps> = ({project}) => {
                                         </>
                                     ) : (<div>{msg.content}</div>)}
 
-                                    <div className={`text-[10px] text-right ${
+                                    <div className={`text-[10px] mt-1 text-right ${
                                         msg.role === 'user' ? 'text-blue-100' : 'text-gray-400'
                                     }`}>
                                         {format(new Date(msg.createdAt), 'HH:mm')}
@@ -207,14 +233,11 @@ export const ChatBot: React.FC<ChatBotProps> = ({project}) => {
                             </div>
                         ))}
 
-                        {/* Loading khi đang chat */}
                         {chatMutation.isPending && (
                             <div className="flex w-full justify-start">
-                                <div
-                                    className="bg-white p-3 rounded-xl border border-gray-200 shadow-sm w-full flex items-center gap-3">
-                                    <div className="p-1.5 bg-gray-100 rounded-full animate-spin">
-                                        <Loader2 size={16} className="text-blue-600"/>
-                                    </div>
+                                <div className="bg-white p-3 rounded-2xl rounded-tl-sm border border-gray-200 shadow-sm flex items-center gap-2">
+                                    <Loader2 size={16} className="text-blue-600 animate-spin"/>
+                                    <span className="text-xs text-gray-500">Đang trả lời...</span>
                                 </div>
                             </div>
                         )}
@@ -228,22 +251,32 @@ export const ChatBot: React.FC<ChatBotProps> = ({project}) => {
                                 e.preventDefault();
                                 handleSendMessage();
                             }}
-                            className="flex items-center gap-2 p-1 transition-all"
+                            className="flex items-center gap-2 transition-all"
                         >
-                            <input
-                                autoFocus
-                                type="text"
+                            <textarea
+                                rows={1}
+                                autoFocus={false}
                                 value={inputValue}
                                 onChange={(e) => setInputValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if(e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        handleSendMessage();
+                                    }
+                                }}
                                 placeholder="Nhập câu hỏi..."
-                                className="flex-1 bg-transparent p-2 outline-none text-sm text-gray-700 placeholder-gray-400"
+                                className="flex-1 bg-gray-100 rounded p-2 outline-none ring-0
+                                           md:text-sm text-gray-700 placeholder-gray-400
+                                           resize-none scrollbar-none"
                             />
                             <button
                                 type="submit"
                                 disabled={!inputValue.trim() || chatMutation.isPending}
-                                className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:bg-gray-300 transition-colors"
+                                className="p-3 bg-blue-600 text-white rounded-full hover:bg-blue-700
+                                           disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors
+                                           flex items-center justify-center h-[44px] w-[44px]"
                             >
-                                <Send size={16}/>
+                                {chatMutation.isPending ? <Loader2 size={18} className="animate-spin"/> : <Send size={18}/>}
                             </button>
                         </form>
                     </div>

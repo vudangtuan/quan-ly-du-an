@@ -31,14 +31,12 @@ export const TaskActivity: React.FC<TaskActivityProps> = ({taskId}) => {
 
     return (
         <div className="space-y-2 px-2 relative">
-            <div className="text-md font-medium">Hoạt động</div>
-
             {isLoading ? (
                 <div className="flex justify-center py-4">
                     <Loader2 className="h-5 w-5 animate-spin text-blue-600"/>
                 </div>
             ) : activities.length === 0 ? (
-                <p className="text-xs text-gray-400 italic px-2">Chưa có hoạt động nào.</p>
+                <p className="text-gray-400 italic px-2">Chưa có hoạt động nào.</p>
             ) : (
                 <div className="">
                     {activities.map((activity) => (

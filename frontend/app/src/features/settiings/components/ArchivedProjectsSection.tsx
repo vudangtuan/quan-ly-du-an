@@ -41,7 +41,7 @@ export const ArchivedProjectsSection: React.FC = () => {
                                         </h4>
                                         <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
                                             <Clock size={12}/>
-                                            <span>Lưu trữ: {item.archivedAt ? formatDateLocalDate(item.archivedAt) : 'N/A'}</span>
+                                            <span>{item.archivedAt ? formatDateLocalDate(item.archivedAt) : 'N/A'}</span>
                                         </div>
                                     </div>
                                 </div>

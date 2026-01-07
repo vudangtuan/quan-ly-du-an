@@ -68,7 +68,7 @@ const getActionIcon = (actionType: string) => {
 
 export const ActivityItem: React.FC<ActivityItemProps> = ({activity}) => {
     return (
-        <div className="flex gap-3 p-2 text-xs border-b border-gray-50 hover:bg-gray-50 transition-colors group animate-in fade-in slide-in-from-top-1 duration-300">
+        <div className="flex gap-3 p-2 text-sm border-b border-gray-50 hover:bg-gray-50 transition-colors group animate-in fade-in slide-in-from-top-1 duration-300">
             {/* Avatar & Icon */}
             <div className="relative flex-shrink-0 mt-1 h-fit">
                 <Avatar userId={activity.actorId} fullName={activity.actorName} className="h-7 w-7"/>

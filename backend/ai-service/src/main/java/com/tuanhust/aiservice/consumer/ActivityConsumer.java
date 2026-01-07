@@ -36,6 +36,7 @@ public class ActivityConsumer {
                 case "CREATE_ACCOUNT", "UPDATE_ACCOUNT": {
                     createDocumentUser(event);
                     createDocumentHistory(event);
+                    break;
                 }
                 case "CREATE_PROJECT", "UPDATE_PROJECT", "ARCHIVE_PROJECT", "RESTORE_PROJECT",
                      "UPDATE_ROLE", "ADD_MEMBER", "DELETE_MEMBER", "ADD_LABEL", "UPDATE_LABEL",
@@ -43,9 +44,17 @@ public class ActivityConsumer {
                      "DELETE_BOARD_COLUMN", "ARCHIVE_BOARD_COLUMN", "RESTORE_BOARD_COLUMN": {
                     createDocumentProject(event);
                     createDocumentHistory(event);
+                    break;
+                }
+                case "CREATE_TASK", "UPDATE_TASK", "DELETE_TASK", "MOVE_TASK", "ARCHIVE_TASK",
+                     "RESTORE_TASK", "COMPLETE_TASK", "INCOMPLETE_TASK", "ADD_LABEL_TASK",
+                     "DELETE_LABEL_TASK", "ADD_MEMBER_TASK", "DELETE_MEMBER_TASK", "ADD_COMMENT",
+                     "UPDATE_COMMENT", "DELETE_COMMENT", "ADD_CHECKLIST", "COMPLETE_CHECKLIST",
+                     "INCOMPLETE_CHECKLIST", "UPDATE_CHECKLIST", "DELETE_CHECKLIST": {
+                    createDocumentTask(event);
+                    createDocumentHistory(event);
                 }
                 default: {
-                    createDocumentTask(event);
                     createDocumentHistory(event);
                 }
             }

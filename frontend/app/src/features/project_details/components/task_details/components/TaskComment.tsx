@@ -62,8 +62,6 @@ export const TaskComment: React.FC<TaskCommentProps> = ({task}) => {
     }
     return (
         <div className="space-y-2 px-2 relative">
-            <div className="text-md font-medium">Bình luận</div>
-
             <MentionsInput
                 onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
@@ -104,7 +102,7 @@ export const TaskComment: React.FC<TaskCommentProps> = ({task}) => {
                 </button>
             </div>
 
-            <div className={"space-y-1 text-xs"}>
+            <div className={"space-y-1 text-sm"}>
                 {task.comments.map((comment: CommentResponse) => {
                     const commenter = projectDetail!.members.find((m: ProjectMemberResponse) => m.userId === comment.creatorId)
                     return <div
@@ -116,7 +114,7 @@ export const TaskComment: React.FC<TaskCommentProps> = ({task}) => {
                                 <span className="font-medium text-gray-900">
                                     {commenter?.fullName}
                                 </span>
-                                <span className="text-[10px] text-gray-500">
+                                <span className="text-[11px] text-gray-500">
                                     {formatDateLocalDate(comment.updatedAt)}
                                 </span>
                             </div>
@@ -173,7 +171,7 @@ export const TaskComment: React.FC<TaskCommentProps> = ({task}) => {
                             </div>
                         </div>
                         <div hidden={userInfo!.userId !== commenter!.userId || editCommentId === comment.commentId}
-                             className={"absolute group-hover:opacity-100 group-hover:flex opacity-0 hidden top-1 right-1"}>
+                             className={"absolute group-hover:opacity-100 group-hover:flex md:opacity-0 md:hidden top-1 right-1"}>
                             <button
                                 onClick={() => {
                                     setEditComment(comment.body);
@@ -235,7 +233,7 @@ const renderContent = (content: string, members: ProjectMemberResponse[]) => {
 };
 
 
-const Suggestion = (suggestion: any, _, highlightedDisplay: React.ReactNode) => (
+const Suggestion = (suggestion: any, _: any, highlightedDisplay: React.ReactNode) => (
     <div className="flex items-center gap-2">
         <Avatar userId={suggestion.id} fullName={suggestion.display || ""}
                 className="h-6 w-6"/>

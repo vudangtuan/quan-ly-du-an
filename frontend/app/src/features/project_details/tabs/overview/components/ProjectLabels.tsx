@@ -104,7 +104,7 @@ const ItemLabel: React.FC<ItemLabelProps> = ({label, canManage}) => {
                         isLoadingDelete={deleteLabelMutation.isPending}
                     >
                         <button
-                            className="opacity-0 group-hover:opacity-100 p-1.5 rounded-md transition-all"
+                            className="md:opacity-0 group-hover:opacity-100 p-1.5 rounded-md transition-all"
                             title="Chỉnh sửa"
                         >
                             <Edit2 className="w-3.5 h-3.5 text-gray-500 hover:text-gray-700"/>

@@ -72,7 +72,7 @@ export const ProjectDashboard: React.FC = () => {
     }, [activeTasks]);
 
     return (
-        <div className="p-8 space-y-4 h-full overflow-auto">
+        <div className="p-4 md:p-8 space-y-4 h-full overflow-auto">
             {/* Statistics Cards */}
             <div className="grid sm:grid-cols-4 grid-cols-1 gap-4">
                 <StatCard

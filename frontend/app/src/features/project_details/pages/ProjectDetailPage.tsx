@@ -41,7 +41,7 @@ export const ProjectDetailPage: React.FC = () => {
         );
     }
     return (
-        <div className={"pt-5 h-screen flex flex-col overflow-hidden"}>
+        <div className={"pt-3 lg:pt-5 h-screen flex flex-col overflow-hidden"}>
             <ProjectDetailHeader project={projectDetail!}
                                  activityConnected={activityStream.isConnected}/>
             <div className={`flex-1 overflow-hidden`}>

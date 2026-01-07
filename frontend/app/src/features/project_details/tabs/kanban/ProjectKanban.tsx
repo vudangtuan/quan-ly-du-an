@@ -18,7 +18,7 @@ export const ProjectKanban: React.FC = () => {
                              bg-blue-600 hover:bg-blue-700 active:bg-blue-800
                              text-white text-sm font-semibold rounded-lg
                              transition-all shadow-sm hover:shadow-md">
-                        <span>Tạo nhiệm vụ</span>
+                        <span>Tạo mới</span>
                     </button>
                 </TaskCreationForm>
             </div>

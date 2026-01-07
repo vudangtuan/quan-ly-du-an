@@ -61,7 +61,7 @@ export const TaskCard = React.memo<TaskCardProps>(({task, isDragging}) => {
             {...attributes}
             {...listeners}
             onClick={handleCardClick}
-            className={`bg-white border p-2 cursor-default border-gray-200 min-h-[70px] shadow-sm hover:shadow-md transition-all ${
+            className={`bg-white border p-2 cursor-default touch-none border-gray-200 min-h-[70px] shadow-sm hover:shadow-md transition-all ${
                 isDragging ? 'shadow-xl ring-1 ring-blue-500' : ''
             } ${isSortableDragging}`}
         >

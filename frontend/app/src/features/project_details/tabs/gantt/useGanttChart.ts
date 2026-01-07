@@ -15,10 +15,11 @@ interface UseGanttChartOptions {
     allTasks: TaskResponse[];
     groupBy: string;
     columns: GridColumn[];
+    showGrid: boolean;
 }
 
 
-export const useGanttChart = ({projectDetail, groupBy, allTasks,columns}: UseGanttChartOptions) => {
+export const useGanttChart = ({projectDetail, groupBy, allTasks, columns,showGrid}: UseGanttChartOptions) => {
     const ganttContainer = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
     const location = useLocation();
@@ -64,6 +65,12 @@ export const useGanttChart = ({projectDetail, groupBy, allTasks,columns}: UseGan
             hideTooltips();
         };
     }, [])
+
+    useEffect(() => {
+        gantt.config.show_grid = showGrid;
+        gantt.render();
+    }, [showGrid])
+
 
     useEffect(() => {
         if (ganttTasks.length === 0) {
@@ -153,7 +160,7 @@ const configureGantt = (columns: GridColumn[]) => {
     gantt.config.subscales = [{unit: 'month', step: 1, date: '%F %Y'}];
     gantt.config.columns = columns;
     gantt.config.readonly = true;
-    gantt.plugins({tooltip: true});
+    gantt.plugins({tooltip: true, marker: true});
 }
 
 const setupTooltipTemplate = () => {

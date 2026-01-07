@@ -36,6 +36,7 @@ public class Task {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String taskId;
+    @Column(nullable = false)
     private String title;
     @Column(columnDefinition = "TEXT")
     private String description;

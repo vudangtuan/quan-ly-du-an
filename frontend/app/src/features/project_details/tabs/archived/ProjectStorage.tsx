@@ -21,7 +21,7 @@ export const ProjectStorage: React.FC = () => {
         </div>
     }
     return (
-        <div className="p-8 h-full overflow-auto bg-gray-50/50">
+        <div className="p-4 md:p-8 h-full overflow-auto bg-gray-50/50">
             {/* Main List */}
             <div className="bg-white rounded border border-gray-200 overflow-hidden">
                 <div className="divide-y divide-gray-100">
@@ -40,9 +40,9 @@ export const ProjectStorage: React.FC = () => {
                                     <h4 className="text-sm font-medium text-gray-900 truncate max-w-[200px] sm:max-w-xs">
                                         {item.name}
                                     </h4>
-                                    <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
+                                    <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
                                         <Clock size={12}/>
-                                        <span>Lưu trữ: {item.archivedAt ? formatDateLocalDate(item.archivedAt) : 'N/A'}</span>
+                                        <span>{item.archivedAt ? formatDateLocalDate(item.archivedAt) : 'N/A'}</span>
                                     </div>
                                 </div>
                             </div>

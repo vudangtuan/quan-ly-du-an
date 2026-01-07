@@ -58,7 +58,7 @@ const ItemMember: React.FC<ItemMemberProps> = ({member, canManage}) => {
             <Menu items={menuItems} enableContextMenu={canManage} enableDropdown={canManage}
                   trigger={
                       <div hidden={!canManage}
-                           className={"absolute right-2 top-3.5 group-hover:opacity-100 opacity-0 transition-opacity duration-200"}>
+                           className={"absolute right-2 top-3.5 group-hover:opacity-100 md:opacity-0 transition-opacity duration-200"}>
                           <MoreVertical className={"h-4 w-4 text-gray-400 hover:text-gray-600"}/>
                       </div>
                   }>

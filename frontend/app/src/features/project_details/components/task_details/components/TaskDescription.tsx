@@ -10,11 +10,13 @@ export const TaskDescription: React.FC<TaskDescriptionProps> = ({task}) => {
     const {updateTaskMutation, handleCancel,
         handleSetEditTask, editTask} = useTask(task);
     return (
-        <div className="space-y-2">
-            <div className={"px-2 text-xs"}>Mô tả</div>
+        <div className="p-2 space-y-2">
+            <div className="text-sm font-semibold text-gray-900 sm:text-gray-600 sm:font-medium">
+                Mô tả
+            </div>
             <textarea
-                className="w-full text-xs p-2 resize-none h-25 rounded-xl
-                 focus:ring-0 leading-relaxed border-transparent hover:border-gray-400"
+                className="w-full text-sm p-2 resize-none h-25 rounded
+                 focus:ring-0 leading-relaxed md:border-transparent hover:border-gray-400"
                 placeholder="Mô tả cho nhiệm vụ ..."
                 value={editTask.description}
                 onChange={(e) => {

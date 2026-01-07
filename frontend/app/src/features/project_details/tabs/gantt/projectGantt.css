@@ -71,4 +71,39 @@
     font-family: inherit;
     color: #1f2937;
 }
+.gantt-container-custom .gantt_ver_scroll,
+.gantt-container-custom .gantt_hor_scroll {
+    background-color: transparent !important;
+}
 
+/* Thanh cuộn dọc */
+.gantt-container-custom ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.gantt-container-custom ::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.gantt-container-custom ::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.gantt-container-custom ::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Style cho Grid header */
+.gantt_grid_scale .gantt_grid_head_cell {
+    color: #64748b;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+}
+
+/* Style cho Task text */
+.gantt_task_content {
+    font-size: 12px;
+}

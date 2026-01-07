@@ -112,8 +112,8 @@ export const Column = React.memo<ColumnProps>(({column, tasks, isDragging}) => {
             <div ref={setNodeRef} style={style}
                  className={`flex flex-col group w-60 max-w-xs flex-shrink-0 border
                         border-gray-300 overflow-hidden shadow-sm ${
-                     isDragging ? 'ring-1 ring-blue-500' : ''
-                 }`}
+                     isDragging ? 'ring-1 ring-blue-500' : ''}
+                 `}
             >
                 {isEditColumn ?
                     <div className="flex items-center justify-between p-3 border-b border-gray-300
@@ -131,18 +131,18 @@ export const Column = React.memo<ColumnProps>(({column, tasks, isDragging}) => {
                     </div> :
                     <Menu items={menuItems} trigger={
                         <div hidden={projectDetail.currentRoleInProject !== 'OWNER'}
-                             className={"opacity-0 group-hover:opacity-100 transition-opacity duration-300"}>
+                             className={"md:opacity-0 group-hover:opacity-100 transition-opacity duration-300"}>
                             <MenuIcon size={16}
                                       className={"absolute top-3.5 right-3 text-gray-400 hover:text-gray-700"}/>
                         </div>
-                    } enableContextMenu={projectDetail.currentRoleInProject === 'OWNER'}
+                    } enableContextMenu={projectDetail.currentRoleInProject === 'OWNER' && window.innerWidth >= 768}
                           enableDropdown={projectDetail.currentRoleInProject === 'OWNER'}>
                         <div
                             {...attributes}
                             {...listeners}
                             data-column-id={column.boardColumnId}
                             className="flex items-center justify-between p-3 border-b border-gray-300
-                        bg-white/50 backdrop-blur-sm cursor-default"
+                        bg-white/50 backdrop-blur-sm cursor-default touch-none"
                         >
                             <div className="flex items-center gap-2 flex-1">
                                 <h3 className="font-semibold text-gray-700 text-sm">

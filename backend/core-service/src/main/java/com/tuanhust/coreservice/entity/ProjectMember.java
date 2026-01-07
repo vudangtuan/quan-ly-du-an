@@ -22,11 +22,7 @@ import java.time.Instant;
 @Entity
 @EntityListeners(AuditingEntityListener.class)
 @IdClass(ProjectMemberID.class)
-@Table(name = "project_members",
-        indexes = {
-                @Index(name = "idx_project_member", columnList = "projectId,memberId"),
-                @Index(name = "idx_member_projects", columnList = "memberId")
-        })
+@Table(name = "project_members")
 public class ProjectMember {
 
     @Column(name = "project_id",insertable = false,updatable = false)

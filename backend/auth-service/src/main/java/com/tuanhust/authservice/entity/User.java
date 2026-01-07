@@ -21,9 +21,7 @@ import java.time.Instant;
 @EntityListeners(AuditingEntityListener.class)
 @Table(name = "users",
         indexes = {
-                @Index(name = "idx_fullName", columnList = "fullName"),
-                @Index(name = "idx_email", columnList = "email"),
-                @Index(name = "idx_oauth_provider_id", columnList = "oauth_provider,oauth_provider_id")
+                @Index(name = "idx_fullName", columnList = "fullName")
         })
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class User {
@@ -36,6 +34,7 @@ public class User {
 
     private String passwordHash;
 
+    @Column(nullable = false)
     private String fullName;
 
     @Enumerated(EnumType.STRING)

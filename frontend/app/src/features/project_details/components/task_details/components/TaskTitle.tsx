@@ -30,7 +30,7 @@ export const TaskTitle: React.FC<TaskTitleProps> = ({task}) => {
                 }
 
             }}
-            className={"border-1 font-medium text-xl py-1.5 px-2 border-transparent hover:border-black transform-border duration-300"}
+            className={"border-1 font-medium text-xl py-1.5 px-2 md:border-transparent hover:border-black transform-border duration-300"}
         />
     );
 }

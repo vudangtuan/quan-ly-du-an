@@ -7,7 +7,6 @@ import {useAuthStore} from "@/store";
 import {ProjectCard, ProjectForm, ProjectTemplate} from "@/features/projects/components";
 import {useCreateProject, useProject} from "@/features/projects/hooks";
 
-
 export const ProjectsPage: React.FC = () => {
     const observerTarget = useRef<HTMLDivElement>(null);
     const userId = useAuthStore.getState().userInfo?.userId;
@@ -23,7 +22,7 @@ export const ProjectsPage: React.FC = () => {
         isFetchingNextPage, fetchNextPage
     } = useProject(userId!);
 
-    // Intersection Observer để phát hiện khi cuộn đến cuối trang
+
     const handleObserver = useCallback((entries: IntersectionObserverEntry[]) => {
         const [target] = entries;
         if (target.isIntersecting && hasNextPage && !isFetchingNextPage) {
@@ -50,18 +49,18 @@ export const ProjectsPage: React.FC = () => {
     }, [handleObserver]);
 
     return (
-        <div className="p-8">
-            {/* Header */}
-            <div className="flex items-center justify-between">
+        <div className="p-4 md:p-8 min-h-screen bg-gray-50/50">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900">Danh sách Dự án</h1>
-                    <p className="mt-1 text-gray-600">
+                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Danh sách Dự án</h1>
+                    <p className="mt-1 text-sm md:text-base text-gray-600">
                         Xem và quản lý tất cả các dự án của bạn ở một nơi.
                     </p>
                 </div>
+
                 <button
                     onClick={() => setIsTemplateOpen(true)}
-                    className="flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-md bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition-colors"
                 >
                     <Plus className="h-5 w-5"/>
                     Tạo dự án mới
@@ -74,20 +73,21 @@ export const ProjectsPage: React.FC = () => {
                 </div>
             )}
 
-            {error && <p className="text-red-500">Lỗi: {error.message}</p>}
+            {error && <p className="text-red-500 mt-4 text-center">Lỗi: {error.message}</p>}
 
             {!isLoading && !error && projects.length > 0 && (
                 <>
-                    <div className="grid mt-10 grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid mt-6 md:mt-10 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                         {projects.map((project) => (
                             <ProjectCard key={project.projectId} project={project}/>
                         ))}
                     </div>
 
-                    <div ref={observerTarget} className="h-10 flex items-center justify-center">
+                    <div ref={observerTarget} className="h-10 flex items-center justify-center mt-4">
                         {isFetchingNextPage && (
                             <div className="flex items-center gap-2 text-gray-600">
                                 <Loader2 className="h-5 w-5 animate-spin"/>
+                                <span className="text-sm">Đang tải thêm...</span>
                             </div>
                         )}
                     </div>
@@ -95,7 +95,10 @@ export const ProjectsPage: React.FC = () => {
             )}
 
             {!isLoading && projects.length === 0 && (
-                <p className="text-center text-gray-500">Bạn chưa có dự án nào.</p>
+                <div className="flex flex-col items-center justify-center mt-20 text-center px-4">
+                    <p className="text-gray-500 text-lg">Bạn chưa có dự án nào.</p>
+                    <p className="text-gray-400 text-sm mt-2">Hãy bắt đầu bằng cách tạo dự án đầu tiên của bạn.</p>
+                </div>
             )}
 
             <ProjectTemplate isOpen={isTemplateOpen}
