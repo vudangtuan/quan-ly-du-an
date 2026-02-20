@@ -101,7 +101,7 @@ public class ProjectController {
     }
 
     @PostMapping("/{projectId}/invitation/send")
-    @ProjectRoles(roles = {"OWNER"})
+    @ProjectRoles(roles = {"OWNER","ADMIN"})
     public ResponseEntity<ApiResponse<Void>> sendInvite(
             @Valid @RequestBody InviteMemberRequest request) {
         projectService.sendInvitation(request);
@@ -116,7 +116,7 @@ public class ProjectController {
     }
 
     @PatchMapping("/{projectId}/members/{userId}")
-    @ProjectRoles(roles = {"OWNER"})
+    @ProjectRoles(roles = {"OWNER","ADMIN"})
     public ResponseEntity<ApiResponse<Void>> updateMemberRole(
             @PathVariable String projectId,
             @PathVariable String userId,
@@ -127,7 +127,7 @@ public class ProjectController {
                 "Member role successfully", null));
     }
 
-    @ProjectRoles(roles = {"OWNER"})
+    @ProjectRoles(roles = {"OWNER","ADMIN"})
     @DeleteMapping("/{projectId}/members/{userId}")
     public ResponseEntity<ApiResponse<String>> removeMember(
             @PathVariable String projectId,
@@ -138,7 +138,7 @@ public class ProjectController {
     }
 
     @PostMapping("/{projectId}/labels")
-    @ProjectRoles(roles = {"OWNER"})
+    @ProjectRoles(roles = {"OWNER","ADMIN"})
     public ResponseEntity<ApiResponse<LabelResponse>> createLabel(
             @PathVariable String projectId,
             @RequestBody @Valid LabelRequest request
@@ -148,7 +148,7 @@ public class ProjectController {
     }
 
     @PutMapping("/{projectId}/labels/{labelId}")
-    @ProjectRoles(roles = {"OWNER"})
+    @ProjectRoles(roles = {"OWNER","ADMIN"})
     public ResponseEntity<ApiResponse<LabelResponse>> updateLabel(
             @PathVariable String projectId,
             @PathVariable String labelId,
@@ -159,7 +159,7 @@ public class ProjectController {
     }
 
     @DeleteMapping("/{projectId}/labels/{labelId}")
-    @ProjectRoles(roles = {"OWNER"})
+    @ProjectRoles(roles = {"OWNER","ADMIN"})
     public ResponseEntity<ApiResponse<Void>> deleteLabel(
             @PathVariable String projectId,
             @PathVariable String labelId
@@ -170,7 +170,7 @@ public class ProjectController {
 
 
     @PostMapping("/{projectId}/board-columns")
-    @ProjectRoles(roles = {"OWNER"})
+    @ProjectRoles(roles = {"OWNER","ADMIN"})
     public ResponseEntity<ApiResponse<BoardColumnResponse>> createBoardColumn(
             @PathVariable String projectId,
             @Valid @RequestBody BoardColumnRequest request
@@ -180,7 +180,7 @@ public class ProjectController {
     }
 
     @PatchMapping("/{projectId}/board-columns/{columnId}")
-    @ProjectRoles(roles = {"OWNER"})
+    @ProjectRoles(roles = {"OWNER","ADMIN"})
     public ResponseEntity<ApiResponse<BoardColumnResponse>> updateColumn(
             @PathVariable String projectId,
             @PathVariable String columnId,
@@ -193,7 +193,7 @@ public class ProjectController {
     }
 
     @DeleteMapping("/{projectId}/board-columns/{columnId}")
-    @ProjectRoles(roles = {"OWNER"})
+    @ProjectRoles(roles = {"OWNER","ADMIN"})
     public ResponseEntity<ApiResponse<Void>> deleteBoardColumn(
             @PathVariable String projectId,
             @PathVariable String columnId
@@ -203,7 +203,7 @@ public class ProjectController {
     }
 
     @PostMapping("/{projectId}/board-columns/{columnId}/archive")
-    @ProjectRoles(roles = {"OWNER"})
+    @ProjectRoles(roles = {"OWNER","ADMIN"})
     public ResponseEntity<ApiResponse<BoardColumnResponse>> archiveColumn(
             @PathVariable String projectId,
             @PathVariable String columnId
@@ -214,7 +214,7 @@ public class ProjectController {
     }
 
     @PostMapping("/{projectId}/board-columns/{columnId}/restore")
-    @ProjectRoles(roles = {"OWNER"})
+    @ProjectRoles(roles = {"OWNER","ADMIN"})
     public ResponseEntity<ApiResponse<BoardColumnResponse>> restoreColumn(
             @PathVariable String projectId,
             @PathVariable String columnId,

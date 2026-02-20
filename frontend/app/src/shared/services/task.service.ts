@@ -1,7 +1,7 @@
 import {privateApi} from '@/shared/api';
 import type {
     TaskResponse, CheckListResponse, CommentResponse,
-    TaskDetailResponse, TaskRequest
+    TaskDetailResponse, TaskRequest, FileResponse
 } from '@/shared/types';
 
 
@@ -121,5 +121,39 @@ export const TaskService = {
     },
     getMyTask: async (): Promise<TaskResponse[]> => {
         return await privateApi.get(`/tasks/me`);
-    }
+    },
+    uploadFile: async (projectId: string, taskId: string, file: File): Promise<FileResponse> => {
+        const formData = new FormData();
+        formData.append('file', file);
+        return await privateApi.post(`/storage/upload/${projectId}/${taskId}`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+    },
+    getFiles: async (projectId: string, taskId: string): Promise<FileResponse[]> => {
+        return await privateApi.get(`/storage/files/${projectId}/${taskId}`)
+    },
+    deleteFile: async (fileKey: string): Promise<void> => {
+        return await privateApi.delete(`/storage/files`,{
+            params: { key: fileKey }
+        });
+    },
+    getUrl: async (key: string): Promise<string> => {
+        return await privateApi.get('/storage/download-url', {
+            params: { key }
+        });
+    },
+    downloadFile: async (key: string): Promise<File> => {
+        return await privateApi.get('/storage/download', {
+            params: { key },
+            responseType: 'blob',
+        });
+    },
+    viewFile: async (key: string): Promise<File> => {
+        return await privateApi.get('/storage/view', {
+            params: { key },
+            responseType: 'blob',
+        });
+    },
 };

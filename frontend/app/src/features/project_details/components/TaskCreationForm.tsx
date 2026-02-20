@@ -217,7 +217,7 @@ export const TaskCreationForm: React.FC<TaskCreationFormProps> = ({children, col
                                                 {overDate && (
                                                     <span className="text-sm text-gray-700">
                                                         {overDate.toLocaleDateString()}
-                                                </span>
+                                                    </span>
                                                 )}
                                             </button>
                                         }

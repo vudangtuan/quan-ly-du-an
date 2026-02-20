@@ -55,4 +55,39 @@ public class ActivityServiceImpl implements ActivityService {
     public List<Activity> getActivitiesByUser(String userId) {
         return activityRepository.findByActorIdOrderByCreatedAtDesc(userId);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PaginatedResponse<Activity> getActivities(String projectId, String userId,
+                                                     Pageable pageable) {
+        Page<Activity> page = activityRepository.
+                findByProjectIdAndActorIdOrderByCreatedAtDesc(projectId, userId, pageable);
+        return PaginatedResponse.<Activity>builder()
+                .first(page.isFirst())
+                .last(page.isLast())
+                .number(page.getNumber())
+                .totalElements(page.getTotalElements())
+                .totalPages(page.getTotalPages())
+                .size(page.getSize())
+                .content(page.getContent())
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PaginatedResponse<Activity> getActivitiesByTaskAndUser(String taskId,
+                                                                  String userId,
+                                                                  Pageable pageable) {
+        Page<Activity> page = activityRepository.
+                findByTaskIdAndActorIdOrderByCreatedAtDesc(taskId, userId, pageable);
+        return PaginatedResponse.<Activity>builder()
+                .first(page.isFirst())
+                .last(page.isLast())
+                .number(page.getNumber())
+                .totalElements(page.getTotalElements())
+                .totalPages(page.getTotalPages())
+                .size(page.getSize())
+                .content(page.getContent())
+                .build();
+    }
 }

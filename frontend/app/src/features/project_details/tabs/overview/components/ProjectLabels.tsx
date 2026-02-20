@@ -20,7 +20,6 @@ export const ProjectLabels: React.FC<ProjectLabelsProps> = ({project}) => {
                     Nhãn dự án
                 </h3>
                 {
-                    project.currentRoleInProject === 'OWNER' &&
                     <LabelPopover title={"Thêm nhãn"}
                                   label={{
                                       name: "",
@@ -56,7 +55,6 @@ export const ProjectLabels: React.FC<ProjectLabelsProps> = ({project}) => {
                         {project.labels.map((l: LabelResponse) => (
                             <ItemLabel
                                 key={l.labelId}
-                                canManage={project.currentRoleInProject === 'OWNER'}
                                 label={l}
                             />
                         ))}
@@ -69,10 +67,9 @@ export const ProjectLabels: React.FC<ProjectLabelsProps> = ({project}) => {
 
 interface ItemLabelProps {
     label: LabelResponse,
-    canManage: boolean,
 }
 
-const ItemLabel: React.FC<ItemLabelProps> = ({label, canManage}) => {
+const ItemLabel: React.FC<ItemLabelProps> = ({label}) => {
     const {updateLabelMutation, deleteLabelMutation} = useLabel(label.projectId);
     return (
         <div className="group hover:bg-gray-50 -mx-2 px-2 py-1.5 rounded-lg transition-colors">
@@ -87,7 +84,7 @@ const ItemLabel: React.FC<ItemLabelProps> = ({label, canManage}) => {
                     <LabelBadge label={label}/>
                 </div>
 
-                {canManage && (
+                {(
                     <LabelPopover
                         label={label}
                         title={"Chỉnh sửa nhãn"}

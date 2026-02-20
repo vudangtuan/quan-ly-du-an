@@ -9,8 +9,6 @@ import {CSS} from '@dnd-kit/utilities';
 import {TaskCard} from "./TaskCard";
 import {Menu, type MenuItem} from "@/shared/components";
 import {Archive, FileEdit, MenuIcon, PlusCircle} from "lucide-react";
-import {useOutletContext} from "react-router-dom";
-import type {ProjectDetailContext} from "@/features/project_details";
 import {useColumn} from "@/features/project_details/tabs/kanban/hooks";
 import {TaskCreationForm} from "@/features/project_details/components";
 
@@ -23,7 +21,6 @@ interface ColumnProps {
 
 
 export const Column = React.memo<ColumnProps>(({column, tasks, isDragging}) => {
-    const {projectDetail} = useOutletContext<ProjectDetailContext>();
     const taskCreationTriggerRef = useRef<HTMLButtonElement>(null);
     const {
         attributes,
@@ -130,13 +127,11 @@ export const Column = React.memo<ColumnProps>(({column, tasks, isDragging}) => {
                         />
                     </div> :
                     <Menu items={menuItems} trigger={
-                        <div hidden={projectDetail.currentRoleInProject !== 'OWNER'}
-                             className={"md:opacity-0 group-hover:opacity-100 transition-opacity duration-300"}>
+                        <div className={"md:opacity-0 group-hover:opacity-100 transition-opacity duration-300"}>
                             <MenuIcon size={16}
                                       className={"absolute top-3.5 right-3 text-gray-400 hover:text-gray-700"}/>
                         </div>
-                    } enableContextMenu={projectDetail.currentRoleInProject === 'OWNER' && window.innerWidth >= 768}
-                          enableDropdown={projectDetail.currentRoleInProject === 'OWNER'}>
+                    } enableContextMenu={window.innerWidth >= 768}>
                         <div
                             {...attributes}
                             {...listeners}

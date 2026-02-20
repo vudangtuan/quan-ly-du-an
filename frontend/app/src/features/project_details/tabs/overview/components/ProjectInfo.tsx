@@ -32,7 +32,7 @@ export const ProjectInfo: React.FC<ProjectInfoProps> = ({project}) => {
                         Thông tin dự án
                     </h3>
                     {
-                        project.currentRoleInProject === "OWNER" && (
+                        (
                             <div className="flex gap-2">
                                 {isEditing ? (
                                     <>

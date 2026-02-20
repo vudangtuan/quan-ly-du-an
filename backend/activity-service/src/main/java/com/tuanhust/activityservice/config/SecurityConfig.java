@@ -1,6 +1,7 @@
 package com.tuanhust.activityservice.config;
 
 import com.tuanhust.activityservice.filter.GatewayFilter;
+import com.tuanhust.activityservice.filter.InternalFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,6 +17,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @RequiredArgsConstructor
 public class SecurityConfig {
     private final GatewayFilter gatewayFilter;
+    private final InternalFilter internalFilter;
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
@@ -23,11 +25,13 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorizeRequests ->
                         authorizeRequests
                                 .requestMatchers("/actuator/**").permitAll()
+                                .requestMatchers("/internal/**").permitAll()
                                 .anyRequest().authenticated())
                 .sessionManagement(s->s.sessionCreationPolicy(
                         SessionCreationPolicy.STATELESS
                 ))
-                .addFilterBefore(gatewayFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(gatewayFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(internalFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

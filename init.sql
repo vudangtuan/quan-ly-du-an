@@ -40,7 +40,7 @@ INSERT INTO users (user_id,
                    updated_at)
 VALUES (gen_random_uuid()::text,
         'admin@quanlynhiemvu.online',
-        '$2a$10$nPkHwuFOS1fgEPIXeXYo1.UpsW/gmyH1EHoyRT7cVvuumXdrYhtVq',
+        '$2a$10$rGA5VWzTTBTqP.jLXEZBxO4HoedCmnAiB2mv9V9V2JTkkK/ezo5k.',
         'ADMIN',
         'GOOGLE',
         '10042003',
@@ -100,7 +100,7 @@ create table board_columns
 
     constraint board_columns_status_check check ( status in ('ACTIVE', 'ARCHIVED'))
 );
-create index idx_projectid on labels (project_id);
+create index idx_projectid on board_columns (project_id);
 
 
 create table project_members
@@ -112,7 +112,7 @@ create table project_members
     role       varchar,
 
     primary key (member_id, project_id),
-    constraint project_members_role_check check ( role in ('OWNER', 'EDITOR', 'COMMENTER', 'VIEWER'))
+    constraint project_members_role_check check ( role in ('OWNER', 'ADMIN', 'MEMBER', 'OBSERVER'))
 );
 
 create table tasks

@@ -42,6 +42,12 @@ spring:
                 - Path=/api/ai/**
               filters:
                 - JwtAuthenticationFilter
+            - id: storage-service
+              uri: lb://storage-service
+              predicates:
+                - Path=/api/storage/**
+              filters:
+                - JwtAuthenticationFilter
 
 eureka:
   client:

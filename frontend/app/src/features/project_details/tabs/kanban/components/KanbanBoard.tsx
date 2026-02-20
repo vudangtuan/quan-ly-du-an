@@ -56,7 +56,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({tasks, columns: initial
                                 column={column}
                                 tasks={tasksColumn[column.boardColumnId] || []}/>
                         ))}
-                        {projectDetail.currentRoleInProject === 'OWNER' && (isAddingColumn ?
+                        {   (isAddingColumn ?
                             <div className="flex flex-col w-60 min-w-60 flex-shrink-0 border border-gray-300 p-3">
                                 <input
                                     type="text"

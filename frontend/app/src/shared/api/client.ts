@@ -47,7 +47,10 @@ privateApi.interceptors.request.use(
         }
         return config;
     },
-    (error) => Promise.reject(error)
+    (error) => {
+        console.log(error);
+        return Promise.reject(error)
+    }
 );
 
 let isRefreshing = false;
@@ -69,6 +72,9 @@ const processQueue = (error: unknown, token: string | null = null) => {
 };
 privateApi.interceptors.response.use(
     (response) => {
+        if (response.config.responseType === 'blob') {
+            return response.data;
+        }
         const apiResponse = response.data as ApiResponse<unknown>;
         if (apiResponse.success) {
             return apiResponse.data as any;
@@ -76,6 +82,7 @@ privateApi.interceptors.response.use(
         return Promise.reject(apiResponse);
     },
     async (error: AxiosError) => {
+        console.log(error);
         const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
 
         if (error.response?.status === 401 && !originalRequest._retry) {

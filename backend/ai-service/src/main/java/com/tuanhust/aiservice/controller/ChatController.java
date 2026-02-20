@@ -36,4 +36,10 @@ public class ChatController {
     ) {
         return ResponseEntity.ok(ApiResponse.success(chatService.getMessage(projectId, createdAt)));
     }
+
+    @DeleteMapping("/chat/{projectId}")
+    public ResponseEntity<ApiResponse<String>> delete(@PathVariable String projectId) {
+        chatService.deleteMessage(projectId);
+        return ResponseEntity.ok(ApiResponse.success("success"));
+    }
 }

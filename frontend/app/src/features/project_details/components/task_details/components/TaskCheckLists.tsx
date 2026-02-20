@@ -1,6 +1,6 @@
 import type { TaskDetailResponse } from "@/shared/types";
 import React, { useEffect, useMemo, useRef } from "react";
-import { Plus, Trash2, CheckSquare } from "lucide-react";
+import {Plus, Trash2, CheckSquare} from "lucide-react";
 import { useChecklist } from "@/features/project_details/components/task_details/hooks";
 
 interface TaskCheckListsProps {
@@ -123,7 +123,15 @@ export const TaskCheckLists: React.FC<TaskCheckListsProps> = ({ task }) => {
                             />
                         </div>
 
-                        {/* Delete Button: Mobile hiện luôn, Desktop hover mới hiện */}
+                        {/*<button*/}
+                        {/*    className="*/}
+                        {/*        p-1 -m-1 rounded text-gray-400 hover:text-blue-500 hover:bg-red-50 transition-all*/}
+                        {/*        opacity-100 sm:opacity-0 sm:group-hover:opacity-100*/}
+                        {/*    "*/}
+                        {/*    title="Chuyển hóa sang task"*/}
+                        {/*>*/}
+                        {/*    <ArrowUpRightIcon size={15}/>*/}
+                        {/*</button>*/}
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();

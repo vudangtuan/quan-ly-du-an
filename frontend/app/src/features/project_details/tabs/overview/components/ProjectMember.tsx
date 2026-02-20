@@ -19,7 +19,7 @@ export const ProjectMember: React.FC<ProjectMemberProps> = ({project}) => {
                 <h3 className="text-base font-semibold text-gray-900 flex items-center">
                     Thành viên
                 </h3>
-                {project.currentRoleInProject === "OWNER" &&
+                {
                     <MemberInvitationFormDialog projectId={project.projectId}>
                         <button
                             className={"hover:bg-blue-100 transition-colors p-2 rounded-full cursor-pointer group"}
@@ -33,7 +33,7 @@ export const ProjectMember: React.FC<ProjectMemberProps> = ({project}) => {
                 {
                     project.members.map((m) => (
                         <ItemMember key={m.userId} member={m}
-                                    canManage={project.currentRoleInProject === "OWNER" && m.userId !== userId}/>
+                                    canManage={m.userId !== userId}/>
                     ))
                 }
             </div>

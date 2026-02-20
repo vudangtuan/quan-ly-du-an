@@ -13,4 +13,8 @@ public interface ActivityService {
     PaginatedResponse<Activity> getActivitiesByTask(String taskId, Pageable pageable);
 
     List<Activity> getActivitiesByUser(String userId);
+
+    PaginatedResponse<Activity> getActivities(String projectId, String userId, Pageable pageable);
+
+    PaginatedResponse<Activity> getActivitiesByTaskAndUser(String taskId, String userId, Pageable pageable);
 }

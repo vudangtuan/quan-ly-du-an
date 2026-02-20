@@ -1,4 +1,4 @@
-import {Edit2, Eye, MessageSquare} from "lucide-react";
+import {Eye, User, UserCog} from "lucide-react";
 import type {ProjectRole} from "@/shared/types";
 import React from "react";
 
@@ -10,22 +10,22 @@ const options: Array<{
     color: string;
 }> = [
     {
-        value: "EDITOR",
-        label: "Editor",
-        description: "Tạo, chỉnh sửa và xóa task, quản lý nội dung dự án",
-        icon: <Edit2 className="h-4 w-4"/>,
+        value: "ADMIN",
+        label: "Admin",
+        description: "Quản lý quy trình, nhãn, thành viên, nhiệm vụ của dự án",
+        icon: <UserCog className="h-4 w-4"/>,
         color: "text-blue-600",
     },
     {
-        value: "COMMENTER",
-        label: "Commenter",
-        description: "Tham gia task và có thể bình luận",
-        icon: <MessageSquare className="h-4 w-4"/>,
+        value: "MEMBER",
+        label: "Member",
+        description: "Thành viên của dự án, tham gia làm nhiệm vụ trong dự án",
+        icon: <User className="h-4 w-4"/>,
         color: "text-green-600",
     },
     {
-        value: "VIEWER",
-        label: "Viewer",
+        value: "OBSERVER",
+        label: "Observer",
         description: "Chỉ xem dự án, không thể tương tác",
         icon: <Eye className="h-4 w-4"/>,
         color: "text-gray-600",

@@ -81,7 +81,7 @@ export interface ProjectDetailResponse {
     members: ProjectMemberResponse[];
 }
 
-export type ProjectRole = 'OWNER' | 'EDITOR' | 'VIEWER' | 'COMMENTER'
+export type ProjectRole = 'OWNER' | 'ADMIN' | 'MEMBER' | 'OBSERVER'
 export type Status = 'ACTIVE' | 'ARCHIVED'
 
 export interface ArchivedItemResponse {

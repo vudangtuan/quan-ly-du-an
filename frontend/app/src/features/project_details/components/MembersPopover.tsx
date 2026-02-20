@@ -1,5 +1,5 @@
 import type {ProjectMemberResponse} from "@/shared/types";
-import React from "react";
+import React, {useMemo} from "react";
 import * as Popover from "@radix-ui/react-popover";
 import {Avatar} from "@/shared/components";
 
@@ -13,6 +13,9 @@ interface MembersPopoverProps {
 
 export const MembersPopover: React.FC<MembersPopoverProps> =
     ({members, selectedMemberIds, toggleMembers, children}) => {
+        const mems = useMemo(() => {
+            return members.filter(m => m.roleInProject !== 'OBSERVER');
+        }, [members]);
         return (
             <Popover.Root modal>
                 <Popover.Trigger asChild>{children}</Popover.Trigger>
@@ -28,7 +31,7 @@ export const MembersPopover: React.FC<MembersPopoverProps> =
                                    data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95
                                    data-[side=bottom]:slide-in-from-top-2 z-1000">
                         <div className={"max-h-40 overflow-y-auto scrollbar-thin space-y-1"}>
-                            {members.map(member => {
+                            {mems.map(member => {
                                 const isSelected = selectedMemberIds.includes(member.userId);
                                 return (
                                     <button

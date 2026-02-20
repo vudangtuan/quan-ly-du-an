@@ -6,6 +6,7 @@ public enum ActionType {
     UPDATE_PROJECT,
     ARCHIVE_PROJECT,
     RESTORE_PROJECT,
+    DELETE_PROJECT,
 
     ADD_MEMBER,
     DELETE_MEMBER,

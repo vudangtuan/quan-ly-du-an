@@ -11,7 +11,7 @@ import {
     TaskAssignees,
     TaskCheckLists, TaskComment,
     TaskDescription,
-    TaskFields,
+    TaskFields, TaskFile,
     TaskHeader,
     TaskOverdue,
     TaskTitle
@@ -74,6 +74,7 @@ export const TaskDetailDialog: React.FC = () => {
                                 <TaskFields task={task!}/>
                             </div>
                             <TaskDescription task={task!}/>
+                            <TaskFile task={task!}/>
                             <TaskCheckLists task={task!}/>
                             <Tabs.Root defaultValue="comments" className="w-full">
                                 <Tabs.List className="flex w-full border-b border-gray-200 mb-4">

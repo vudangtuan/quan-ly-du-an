@@ -31,7 +31,8 @@ logging:
   level:
     org.springframework.web: debug
     org.springframework.data.mongodb: debug
-
+internal:
+  secret-key: ${INTERNAL_SECRET_KEY}
 
 management:
   endpoints:

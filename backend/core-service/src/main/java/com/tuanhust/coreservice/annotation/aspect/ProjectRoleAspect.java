@@ -46,7 +46,7 @@ public class ProjectRoleAspect {
 
         String[] roles = projectRoles.roles();
         if (roles.length == 0) {
-            roles = new String[]{"OWNER", "EDITOR", "VIEWER", "COMMENTER"};
+            roles = new String[]{"OWNER", "ADMIN", "MEMBER", "OBSERVER"};
         }
 
         Role roleUserId = projectMemberRepository.getRole(projectId, userId).orElseThrow(

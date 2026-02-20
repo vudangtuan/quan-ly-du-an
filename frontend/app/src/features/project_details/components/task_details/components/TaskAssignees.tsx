@@ -71,10 +71,10 @@ export const TaskAssignees: React.FC<TaskAssigneesProps> = ({ task }) => {
                 >
                     <button
                         className={`
-                            flex items-center gap-2 px-3 py-1 rounded-full border border-dashed transition-all
+                            flex items-center gap-2 px-3 py-1 rounded-full border transition-all
                             ${assignees.length === 0
                             ? "bg-white border-gray-300 text-gray-500 hover:border-blue-400 hover:text-blue-600"
-                            : "w-8 h-8 justify-center border-transparent hover:bg-gray-100 text-gray-400 hover:text-gray-600"
+                            : "justify-center border-transparent hover:bg-gray-100 text-gray-400 hover:text-gray-600"
                         }
                         `}
                         title="Thêm người thực hiện"

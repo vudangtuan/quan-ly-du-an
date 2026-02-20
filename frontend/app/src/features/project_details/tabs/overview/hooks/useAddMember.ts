@@ -11,7 +11,7 @@ export const useAddMember = (projectId: string) => {
     const [searchQuery, setSearchQuery] = useState('');
     const debouncedSearchQuery = useDebounce(searchQuery, 500);
     const [selectedUserId, setSelectedUserId] = useState<string>("");
-    const [selectedRole, setSelectedRole] = useState<Exclude<ProjectRole, 'OWNER'>>('EDITOR');
+    const [selectedRole, setSelectedRole] = useState<Exclude<ProjectRole, 'OWNER'>>('MEMBER');
 
     const searchUserQuery = useInfiniteQuery({
         getNextPageParam: (lastPage) => {
@@ -46,7 +46,7 @@ export const useAddMember = (projectId: string) => {
     const handleCancel = () => {
         setSearchQuery("")
         setSelectedUserId("")
-        setSelectedRole("EDITOR")
+        setSelectedRole("MEMBER")
     }
 
     const inviteMemberMutation = useMutation({

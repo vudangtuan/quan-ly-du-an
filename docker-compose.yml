@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: postgres
     volumes:
-      - pg1_data:/var/lib/postgresql/data
+      - pg_data:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     expose:
       - "5432"
@@ -49,8 +49,8 @@ services:
   eureka-server:
     build: ./backend/eureka-server
     container_name: eureka-server
-    expose:
-      - "8761"
+    ports:
+      - "8761:8761"
 
   auth-service:
     build: ./backend/auth-service
@@ -76,6 +76,7 @@ services:
       - RABBITMQ_PORT=5672
       - RABBITMQ_USERNAME=${RABBITMQ_USER}
       - RABBITMQ_PASSWORD=${RABBITMQ_PASS}
+      - TZ=Asia/Ho_Chi_Minh
     depends_on:
       - postgres
       - redis
@@ -103,6 +104,7 @@ services:
       - RABBITMQ_USERNAME=${RABBITMQ_USER}
       - RABBITMQ_PASSWORD=${RABBITMQ_PASS}
       - FRONTEND_URL=${FRONTEND_URL}
+      - TZ=Asia/Ho_Chi_Minh
     depends_on:
       - postgres
       - redis
@@ -119,6 +121,7 @@ services:
       - REDIS_HOST=redis
       - JWT_PUBLIC_KEY_PATH=file:/app/certs/public_key.pem
       - CORS_ALLOWED_ORIGINS=${FRONTEND_URL}
+      - TZ=Asia/Ho_Chi_Minh
     depends_on:
       - eureka-server
       - redis
@@ -137,6 +140,8 @@ services:
       - RABBITMQ_USERNAME=${RABBITMQ_USER}
       - RABBITMQ_PASSWORD=${RABBITMQ_PASS}
       - EUREKA_URI=${EUREKA_URI}
+      - TZ=Asia/Ho_Chi_Minh
+      - INTERNAL_SECRET_KEY=${INTERNAL_SECRET_KEY}
     depends_on:
       - eureka-server
       - mongo
@@ -190,20 +195,55 @@ services:
       - rabbitmq
       - postgres
 
-  frontend-web:
-    build: frontend/app
-    container_name: tm_frontend
-    ports:
-      - "5173:80"
-    depends_on:
-      - api-gateway
+#  frontend-web:
+#    build: frontend/app
+#    container_name: tm_frontend
+#    ports:
+#      - "5173:80"
+#    depends_on:
+#      - api-gateway
 
+  minio:
+    image: minio/minio:latest
+    container_name: minio_server
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+
+  storage-service:
+    build: ./backend/storage-service
+    container_name: storage-service
+    expose:
+      - "8005"
+    environment:
+      - AWS_ENDPOINT=http://minio:9000
+      - ACCESS-KEY=${MINIO_USER}
+      - SECRET-KEY=${MINIO_PASSWORD}
+      - EUREKA_URI=${EUREKA_URI}
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USERNAME=${RABBITMQ_USER}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASS}
+      - INTERNAL_SECRET_KEY=${INTERNAL_SECRET_KEY}
+      - TZ=Asia/Ho_Chi_Minh
+    depends_on:
+      - rabbitmq
+      - eureka-server
+      - minio
 
 
 volumes:
-  pg1_data:
+  pg_data:
   redis_data:
   mongo_data:
   mongo_config:
   rabbitmq_data:
+  minio_data:
+    
 

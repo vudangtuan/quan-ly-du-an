@@ -23,11 +23,14 @@ public interface ProjectRepository extends JpaRepository<Project, String> {
             """, nativeQuery = true)
     Optional<Project> findArchivedById(String projectId);
 
-    @Modifying
+
+
+
     @Query(value = """
             delete from projects where project_id=:projectId
+                        RETURNING *
             """, nativeQuery = true)
-    void removeProject(String projectId);
+    Optional<Project> removeProject(String projectId);
 
     @EntityGraph(attributePaths = {"members", "labels", "boardColumns"})
     @Query(value = "select p from Project p where p.projectId=:id")

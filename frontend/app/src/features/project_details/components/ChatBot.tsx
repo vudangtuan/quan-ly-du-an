@@ -1,7 +1,7 @@
 import React, {useLayoutEffect, useMemo, useRef, useState} from "react";
-import {Bot, Loader2, Send, Sparkles, X} from "lucide-react";
+import {Bot, BrushCleaning, Loader2, Send, Sparkles, X} from "lucide-react";
 import * as Popover from "@radix-ui/react-popover";
-import {useInfiniteQuery, useMutation} from "@tanstack/react-query";
+import {useInfiniteQuery, useMutation, useQueryClient} from "@tanstack/react-query";
 import {ChatService, type Message} from "@/shared/services";
 import type {ProjectDetailResponse} from "@/shared/types";
 import ReactMarkdown from 'react-markdown';
@@ -11,6 +11,7 @@ import {QUERY_STALE_TIME} from "@/utils";
 import {format} from "date-fns";
 import rehypeHighlight from 'rehype-highlight';
 import 'highlight.js/styles/vs2015.css';
+import toast from "react-hot-toast";
 
 interface ChatBotProps {
     project: ProjectDetailResponse
@@ -21,6 +22,7 @@ export const ChatBot: React.FC<ChatBotProps> = ({project}) => {
         return project.members.map(m => m.userId);
     }, [project]);
     const userId = useAuthStore(state => state.userInfo!.userId);
+    const queryClient = useQueryClient();
 
     const [newMessages, setNewMessages] = useState<Message[]>([]);
     const [inputValue, setInputValue] = useState("");
@@ -77,6 +79,24 @@ export const ChatBot: React.FC<ChatBotProps> = ({project}) => {
                 createdAt: new Date().toString()
             };
             setNewMessages(prev => [...prev, botMsg]);
+        },
+        onError: (err) => {
+            toast.error(err.message);
+        }
+    });
+    const deleteChat = useMutation({
+        mutationFn: () => ChatService.deleteChat(project.projectId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({queryKey:['chatHistory', project.projectId, userId]});
+            setNewMessages([{
+                id: '1',
+                content: "Tôi là trợ lý AI dự án. Bạn cần trợ giúp gì?",
+                role: 'assistant',
+                createdAt: new Date().toISOString()
+            }]);
+        },
+        onError: (err) => {
+            toast.error(err.message);
         }
     });
 
@@ -86,8 +106,7 @@ export const ChatBot: React.FC<ChatBotProps> = ({project}) => {
         if (isFetchingNextPage && prevScrollHeightRef.current > 0) {
             const newScrollHeight = scrollContainerRef.current.scrollHeight;
             scrollContainerRef.current.scrollTop = newScrollHeight - prevScrollHeightRef.current;
-        }
-        else if (newMessages.length > 0 && !isFetchingNextPage) {
+        } else if (newMessages.length > 0 && !isFetchingNextPage) {
             messagesEndRef.current?.scrollIntoView({behavior: "smooth"});
         }
     }, [data, isFetchingNextPage, newMessages.length]);
@@ -142,7 +161,7 @@ export const ChatBot: React.FC<ChatBotProps> = ({project}) => {
                                 ${isOpen ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-gray-200 text-gray-700'}
                             `}
                         >
-                            {isOpen ? <X className="h-6 w-6" /> : <Bot className="h-6 w-6"/>}
+                            {isOpen ? <X className="h-6 w-6"/> : <Bot className="h-6 w-6"/>}
                         </button>
                     </div>
                 </div>
@@ -154,7 +173,7 @@ export const ChatBot: React.FC<ChatBotProps> = ({project}) => {
                         z-50 rounded bg-white shadow-2xl border border-gray-300
                         outline-none overflow-hidden flex flex-col
                         w-[calc(100vw-32px)] h-[75vh]
-                        max-w-md
+                        max-w-2xl
                         data-[state=open]:animate-in data-[state=open]:fade-in data-[state=open]:zoom-in-95 data-[state=open]:slide-in-from-bottom-2
                         data-[state=closed]:animate-out data-[state=closed]:fade-out data-[state=closed]:zoom-out-95
                     "
@@ -164,16 +183,25 @@ export const ChatBot: React.FC<ChatBotProps> = ({project}) => {
                     avoidCollisions={true}
                     onOpenAutoFocus={(e) => e.preventDefault()}
                 >
-                    <div className="flex items-center justify-between p-3 border-b border-gray-800 bg-gray-900 text-white">
+                    <div
+                        className="flex items-center justify-between p-3 border-b border-gray-800 bg-gray-900 text-white">
                         <span className="font-semibold flex items-center gap-2">
                             <Sparkles size={16} className="text-blue-400"/>
                             Trợ lý AI
                         </span>
-                        <Popover.Close asChild>
-                            <button className="text-gray-400 hover:text-white transition-colors rounded-full p-1 hover:bg-gray-800">
-                                <X size={20} />
+                        <div className="flex items-center gap-2">
+                            <button title={"Clear chat"}
+                                    className="text-gray-400 hover:text-white transition-colors rounded-full p-1 hover:bg-gray-800"
+                                    onClick={()=>deleteChat.mutate()}>
+                                <BrushCleaning size={20}/>
                             </button>
-                        </Popover.Close>
+                            <Popover.Close asChild>
+                                <button
+                                    className="text-gray-400 hover:text-white transition-colors rounded-full p-1 hover:bg-gray-800">
+                                    <X size={20}/>
+                                </button>
+                            </Popover.Close>
+                        </div>
                     </div>
 
                     <div
@@ -182,7 +210,8 @@ export const ChatBot: React.FC<ChatBotProps> = ({project}) => {
                         className="flex-1 overflow-y-auto p-4 bg-gray-50 space-y-4 scrollbar-thin relative"
                     >
                         {isFetchingNextPage && (
-                            <div className="flex justify-center py-2 absolute top-0 left-0 w-full z-10 pointer-events-none">
+                            <div
+                                className="flex justify-center py-2 absolute top-0 left-0 w-full z-10 pointer-events-none">
                                 <div className="bg-white/80 p-1 rounded-full shadow-sm backdrop-blur-sm">
                                     <Loader2 className="animate-spin text-blue-500 w-4 h-4"/>
                                 </div>
@@ -209,7 +238,8 @@ export const ChatBot: React.FC<ChatBotProps> = ({project}) => {
                                                 <div className="p-1 bg-blue-100 rounded-full">
                                                     <Sparkles size={12} className="text-blue-600"/>
                                                 </div>
-                                                <span className="text-xs font-semibold text-gray-500">AI Assistant</span>
+                                                <span
+                                                    className="text-xs font-semibold text-gray-500">AI Assistant</span>
                                             </div>
                                             <div className="prose prose-sm max-w-none
                                                             prose-pre:whitespace-pre-wrap prose-pre:bg-gray-800 prose-pre:text-gray-100
@@ -235,7 +265,8 @@ export const ChatBot: React.FC<ChatBotProps> = ({project}) => {
 
                         {chatMutation.isPending && (
                             <div className="flex w-full justify-start">
-                                <div className="bg-white p-3 rounded-2xl rounded-tl-sm border border-gray-200 shadow-sm flex items-center gap-2">
+                                <div
+                                    className="bg-white p-3 rounded-2xl rounded-tl-sm border border-gray-200 shadow-sm flex items-center gap-2">
                                     <Loader2 size={16} className="text-blue-600 animate-spin"/>
                                     <span className="text-xs text-gray-500">Đang trả lời...</span>
                                 </div>
@@ -259,7 +290,7 @@ export const ChatBot: React.FC<ChatBotProps> = ({project}) => {
                                 value={inputValue}
                                 onChange={(e) => setInputValue(e.target.value)}
                                 onKeyDown={(e) => {
-                                    if(e.key === 'Enter' && !e.shiftKey) {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
                                         e.preventDefault();
                                         handleSendMessage();
                                     }
@@ -276,7 +307,8 @@ export const ChatBot: React.FC<ChatBotProps> = ({project}) => {
                                            disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors
                                            flex items-center justify-center h-[44px] w-[44px]"
                             >
-                                {chatMutation.isPending ? <Loader2 size={18} className="animate-spin"/> : <Send size={18}/>}
+                                {chatMutation.isPending ? <Loader2 size={18} className="animate-spin"/> :
+                                    <Send size={18}/>}
                             </button>
                         </form>
                     </div>

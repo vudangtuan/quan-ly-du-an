@@ -13,4 +13,5 @@ import java.util.List;
 public interface AuthServiceClient {
     @PostMapping("/internal/users")
     List<UserPrincipal> getUsers(List<String> usersId);
+
 }

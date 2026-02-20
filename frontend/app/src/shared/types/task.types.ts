@@ -76,3 +76,8 @@ export interface TaskDetailResponse {
     checkLists: CheckListResponse[];
 }
 
+export interface FileResponse {
+    fileName: string;
+    key: string;
+    size: number;
+}

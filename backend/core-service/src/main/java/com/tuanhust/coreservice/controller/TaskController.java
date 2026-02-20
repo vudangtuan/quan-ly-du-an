@@ -20,7 +20,7 @@ public class TaskController {
     private final TaskService taskService;
 
     @PostMapping
-    @ProjectRoles(roles = {"OWNER", "EDITOR"})
+    @ProjectRoles(roles = {"OWNER", "ADMIN"})
     public ResponseEntity<ApiResponse<TaskResponse>> createTask(
             @PathVariable String projectId,
             @RequestBody @Valid TaskRequest taskRequest
@@ -41,7 +41,7 @@ public class TaskController {
     }
 
     @PostMapping("/{taskId}/archive")
-    @ProjectRoles(roles = {"OWNER", "EDITOR"})
+    @ProjectRoles(roles = {"OWNER", "ADMIN"})
     public ResponseEntity<ApiResponse<TaskResponse>> archiveTask(
             @PathVariable String projectId,
             @PathVariable String taskId
@@ -51,7 +51,7 @@ public class TaskController {
     }
 
     @PostMapping("/{taskId}/restore")
-    @ProjectRoles(roles = {"OWNER", "EDITOR"})
+    @ProjectRoles(roles = {"OWNER", "ADMIN"})
     public ResponseEntity<ApiResponse<TaskResponse>> restoreTask(
             @PathVariable String projectId,
             @PathVariable String taskId,
@@ -62,7 +62,7 @@ public class TaskController {
     }
 
     @DeleteMapping("/{taskId}")
-    @ProjectRoles(roles = {"OWNER", "EDITOR"})
+    @ProjectRoles(roles = {"OWNER", "ADMIN"})
     public ResponseEntity<ApiResponse<Void>> deleteTask(
             @PathVariable String projectId,
             @PathVariable String taskId
@@ -73,7 +73,7 @@ public class TaskController {
     }
 
     @PatchMapping("/{taskId}/move")
-    @ProjectRoles(roles = {"OWNER", "EDITOR"})
+    @ProjectRoles(roles = {"OWNER", "ADMIN"})
     public ResponseEntity<ApiResponse<TaskResponse>> moveTask(
             @PathVariable String projectId,
             @PathVariable String taskId,
@@ -97,7 +97,7 @@ public class TaskController {
     }
 
     @PutMapping("/{taskId}")
-    @ProjectRoles(roles = {"OWNER", "EDITOR"})
+    @ProjectRoles(roles = {"OWNER", "ADMIN"})
     public ResponseEntity<ApiResponse<Void>> updateTask(
             @PathVariable String projectId,
             @PathVariable String taskId,
@@ -108,7 +108,7 @@ public class TaskController {
     }
 
     @PutMapping("/{taskId}/assignees")
-    @ProjectRoles(roles = {"OWNER", "EDITOR"})
+    @ProjectRoles(roles = {"OWNER", "ADMIN"})
     public ResponseEntity<ApiResponse<Void>> addAssigneeTask(
             @PathVariable String projectId,
             @PathVariable String taskId,
@@ -118,7 +118,7 @@ public class TaskController {
     }
 
     @DeleteMapping("/{taskId}/assignees")
-    @ProjectRoles(roles = {"OWNER", "EDITOR"})
+    @ProjectRoles(roles = {"OWNER", "ADMIN"})
     public ResponseEntity<ApiResponse<Void>> deleteAssigneeTask(
             @PathVariable String projectId,
             @PathVariable String taskId,
@@ -128,7 +128,7 @@ public class TaskController {
     }
 
     @PutMapping("/{taskId}/labels")
-    @ProjectRoles(roles = {"OWNER", "EDITOR"})
+    @ProjectRoles(roles = {"OWNER", "ADMIN"})
     public ResponseEntity<ApiResponse<Void>> addLabelTask(
             @PathVariable String projectId,
             @PathVariable String taskId,
@@ -138,7 +138,7 @@ public class TaskController {
     }
 
     @DeleteMapping("/{taskId}/labels")
-    @ProjectRoles(roles = {"OWNER", "EDITOR"})
+    @ProjectRoles(roles = {"OWNER", "ADMIN"})
     public ResponseEntity<ApiResponse<Void>> deleteLabelTask(
             @PathVariable String projectId,
             @PathVariable String taskId,
@@ -148,7 +148,7 @@ public class TaskController {
     }
 
     @PutMapping("/{taskId}/complete")
-    @ProjectRoles(roles = {"OWNER", "EDITOR", "COMMENTER"})
+    @ProjectRoles(roles = {"OWNER", "ADMIN", "MEMBER"})
     public ResponseEntity<ApiResponse<Void>> updateCompletedTask(
             @PathVariable String projectId,
             @PathVariable String taskId,
@@ -159,7 +159,7 @@ public class TaskController {
     }
 
     @PostMapping("/{taskId}/checkList")
-    @ProjectRoles(roles = {"OWNER", "EDITOR", "COMMENTER"})
+    @ProjectRoles(roles = {"OWNER", "ADMIN", "MEMBER"})
     public ResponseEntity<ApiResponse<CheckListResponse>> createCheckList(
             @PathVariable String projectId,
             @PathVariable String taskId,
@@ -170,7 +170,7 @@ public class TaskController {
     }
 
     @PutMapping("/{taskId}/checkList/{checkListId}")
-    @ProjectRoles(roles = {"OWNER", "EDITOR", "COMMENTER"})
+    @ProjectRoles(roles = {"OWNER", "ADMIN", "MEMBER"})
     public ResponseEntity<ApiResponse<CheckListResponse>> updateCheckList(
             @PathVariable String projectId,
             @PathVariable String taskId,
@@ -183,7 +183,7 @@ public class TaskController {
     }
 
     @DeleteMapping("/{taskId}/checkList/{checkListId}")
-    @ProjectRoles(roles = {"OWNER", "EDITOR", "COMMENTER"})
+    @ProjectRoles(roles = {"OWNER", "ADMIN", "MEMBER"})
     public ResponseEntity<ApiResponse<Void>> deleteCheckList(
             @PathVariable String checkListId,
             @PathVariable String projectId, @PathVariable String taskId) {
@@ -193,7 +193,7 @@ public class TaskController {
 
 
     @PostMapping("/{taskId}/comment")
-    @ProjectRoles(roles = {"OWNER", "EDITOR", "COMMENTER"})
+    @ProjectRoles(roles = {"OWNER", "ADMIN", "MEMBER"})
     public ResponseEntity<ApiResponse<CommentResponse>> createComment(
             @PathVariable String projectId,
             @PathVariable String taskId,

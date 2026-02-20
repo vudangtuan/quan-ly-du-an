@@ -1,4 +1,4 @@
-import type {TaskDetailResponse, TaskRequest, TaskResponse} from "@/shared/types";
+import type {FileResponse, TaskDetailResponse, TaskRequest, TaskResponse} from "@/shared/types";
 import {useMutation, useQueryClient} from "@tanstack/react-query";
 import {TaskService} from "@/shared/services";
 import toast from "react-hot-toast";
@@ -165,6 +165,27 @@ export const useTask = (task: TaskDetailResponse) => {
             toast.error(e.message);
         }
     })
+    const uploadFileMutation = useMutation({
+        mutationFn: (file: File) => TaskService.uploadFile(task.projectId, task.taskId, file),
+        onSuccess: (res) => {
+            queryClient.setQueryData(['task-files', task.projectId, task.taskId],
+                (old: FileResponse[]) => [...old, res]);
+        },
+        onError: (e) => {
+            toast.error(e.message);
+        }
+    })
+    const deleteFileMutation = useMutation({
+        mutationFn: (key: string) => TaskService.deleteFile(key),
+        onSuccess: (_, variables) => {
+            queryClient.setQueryData(['task-files', task.projectId, task.taskId],
+                (old: FileResponse[]) => old.filter(o => o.key !== variables));
+        },
+        onError: (e) => {
+            console.log(e);
+            toast.error(e.message);
+        }
+    })
 
 
     const handleSetEditTask = (value: Partial<TaskDetailResponse>) => {
@@ -216,6 +237,6 @@ export const useTask = (task: TaskDetailResponse) => {
         handleCancel, updateDoneTaskMutation, archiveTaskMutation,
         handleToggleMember, deleteAssigneeMutation,
         handleToggleLabel, deleteLabelMutation,
-        moveTaskMutation
+        moveTaskMutation, uploadFileMutation, deleteFileMutation
     }
 }

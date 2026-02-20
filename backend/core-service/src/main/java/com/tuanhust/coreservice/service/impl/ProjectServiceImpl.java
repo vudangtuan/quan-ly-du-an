@@ -56,7 +56,6 @@ public class ProjectServiceImpl implements ProjectService {
     private final AuthServiceClient authClient;
     private final RedisTemplate<String, Object> redisTemplate;
     private final ApplicationEventPublisher eventPublisher;
-    private final ObjectMapper objectMapper;
 
     @Value("${app.frontend-url}")
     private String frontendUrl;
@@ -257,7 +256,14 @@ public class ProjectServiceImpl implements ProjectService {
             }
     )
     public void deleteProject(String projectId) {
-        projectRepository.removeProject(projectId);
+        Project project =  projectRepository.removeProject(projectId).orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Dự án không tồn tại or chưa được lưu trữ")
+        );
+        eventPublisher.publishEvent(new ProjectEvent(
+                project, getCurrentUser(), ActionType.DELETE_PROJECT,
+                "đã xóa dự án", projectId, project.getName(),Map.of()
+        ));
     }
 
 
@@ -355,10 +361,14 @@ public class ProjectServiceImpl implements ProjectService {
                         () -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                                 "Thành viên không có trong dự án or đã bị xóa")
                 );
-        if (projectMember.getRole().equals(Role.OWNER)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "Không thể thay đổi vai trò của quản lý");
+        var roleC = projectMemberRepository.getRole(projectId, getCurrentUser().getUserId());
+        if (roleC.isPresent() && roleC.get() != Role.OWNER) {
+            if (projectMember.getRole().equals(Role.OWNER) || projectMember.getRole().equals(Role.ADMIN)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                        "Không thể thay đổi vai trò của quản lý");
+            }
         }
+
         if (!role.equals(projectMember.getRole())) {
             UserPrincipal userPrincipal = authClient.getUsers(List.of(projectMember.getMemberId()))
                     .stream().findFirst().orElseThrow(
@@ -382,7 +392,6 @@ public class ProjectServiceImpl implements ProjectService {
         }
     }
 
-
     @Override
     public void sendInvitation(InviteMemberRequest request) {
         Role role = request.getRole();
@@ -399,7 +408,7 @@ public class ProjectServiceImpl implements ProjectService {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Đã gửi lời mời cho thành viên này rồi.");
         }
-        if (role == Role.EDITOR || role == Role.VIEWER || role == Role.COMMENTER) {
+        if (role == Role.ADMIN || role == Role.MEMBER || role == Role.OBSERVER) {
             UserPrincipal currentUser = getCurrentUser();
             UserPrincipal recipientUser = authClient.getUsers(List.of(request.getMemberId()))
                     .stream().findFirst().orElseThrow(() -> new ResponseStatusException(
@@ -502,8 +511,11 @@ public class ProjectServiceImpl implements ProjectService {
                         () -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                                 "Thành viên không có trong dự án or đã bị xóa")
                 );
-        if (projectMember.getRole().equals(Role.OWNER)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Không thể xóa quản lý");
+        var role = projectMemberRepository.getRole(projectId, getCurrentUser().getUserId());
+        if (role.isPresent() && role.get() != Role.OWNER) {
+            if (projectMember.getRole().equals(Role.OWNER) || projectMember.getRole().equals(Role.ADMIN)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Không thể xóa quản lý");
+            }
         }
         projectMemberRepository.delete(projectMember);
         taskAssigneeRepository.deleteAllByAssigneeIdAndTaskProjectId(memberId, projectId);

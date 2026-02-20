@@ -24,5 +24,8 @@ export const ChatService = {
                 createdAt,
             }
         });
+    },
+    deleteChat:(projectId: string) => {
+        return privateApi.delete(`ai/chat/${projectId}`, {})
     }
 }

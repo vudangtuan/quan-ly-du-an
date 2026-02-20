@@ -1,190 +1,138 @@
 package com.tuanhust.aiservice.tool;
 
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tuanhust.aiservice.client.ActivityServiceClient;
+import com.tuanhust.aiservice.client.CoreServiceClient;
+import com.tuanhust.aiservice.dto.ApiResponse;
+import com.tuanhust.aiservice.dto.TaskRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 
 @Component
 @RequiredArgsConstructor
 public class AiTools {
-    private final JdbcTemplate jdbcTemplate;
-    private final ObjectMapper objectMapper;
+    private final CoreServiceClient coreServiceClient;
+    private final ActivityServiceClient activityServiceClient;
+    private final VectorStore vectorStore;
+
 
     @Tool(description = """
-        Lấy lịch sử hoạt động TỔNG QUAN của toàn bộ dự án.
-        
-        Trả về các hoạt động gần đây nhất trên toàn dự án (tạo task mới, cập nhật trạng thái,
-        thay đổi thành viên, v.v.) để có cái nhìn tổng quan về diễn biến dự án.
-        
-        CHÚ Ý QUAN TRỌNG:
-            - SỬ DỤNG KHI: Người dùng hỏi về "dự án có gì mới?", "hoạt động gần đây của dự án",
-              "tổng quan dự án" hoặc không chỉ định task cụ thể.
-            - TUYỆT ĐỐI KHÔNG DÙNG KHI: Người dùng hỏi về một Task/nhiệm vụ CỤ THỂ
-              (ví dụ: "task ABC có gì thay đổi?") → Dùng getHistoryForTask thay thế.
-        """)
-    public String getRecentHistoryForProject(
-            @ToolParam(description = "ID của dự án cần tra cứu (định dạng UUID, ví dụ: '123e4567-e89b-12d3-a456-426614174000')")
-            String projectId,
-
-            @ToolParam(description = "Số lượng bản ghi lịch sử muốn lấy (giá trị từ 1-20, mặc định là 5 nếu không chỉ định hoặc ngoài khoảng)")
-            int limit
-    ) {
-        int realLimit = (limit > 0 && limit <= 20) ? limit : 5;
-        String sql = """
-                SELECT id, content, metadata
-                FROM vector_store
-                WHERE metadata ->> 'projectId' = ?
-                  AND metadata ->> 'doc_type' = 'HISTORY'
-                ORDER BY metadata ->> 'createdAt' DESC
-                LIMIT ?
-            """;
-        try {
-            List<Document> documents = jdbcTemplate.query(sql, this::mapRow, projectId, realLimit);
-            return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(documents);
-        } catch (Exception e) {
-            return "Lỗi khi lấy lịch sử dự án, vui lòng thử lại";
-        }
-    }
-
-    @Tool(description = """
-        Lấy lịch sử hoạt động CỤ THỂ của MỘT NHIỆM VỤ (task).
-        
-        Trả về các thay đổi, cập nhật liên quan đến một task cụ thể (thay đổi trạng thái,
-        gán người thực hiện, cập nhật deadline, bình luận, v.v.).
-        
-        SỬ DỤNG KHI:
-            - Người dùng hỏi về lịch sử của một task cụ thể
-            - Cần xem chi tiết các thay đổi của một nhiệm vụ
-            - Ví dụ: "task ABC có gì thay đổi?", "lịch sử của task XYZ"
-        """)
-    public String getHistoryForTask(
-            @ToolParam(description = "ID của dự án chứa task (định dạng UUID)")
-            String projectId,
-
-            @ToolParam(description = "ID của nhiệm vụ/task cần xem lịch sử (định dạng UUID)")
-            String taskId,
-
-            @ToolParam(description = "Số lượng bản ghi lịch sử muốn lấy (giá trị từ 1-20, mặc định là 5)")
-            int limit
-    ) {
-        int realLimit = (limit > 0 && limit <= 20) ? limit : 5;
-        String sql = """
-                SELECT id, content, metadata
-                FROM vector_store
-                WHERE metadata ->> 'projectId' = ?
-                  AND metadata ->> 'taskId' = ?
-                  AND metadata ->> 'doc_type' = 'HISTORY'
-                ORDER BY metadata ->> 'createdAt' DESC
-                LIMIT ?
-            """;
-        try {
-            List<Document> documents = jdbcTemplate.query(sql, this::mapRow, projectId, taskId, realLimit);
-            return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(documents);
-        } catch (Exception e) {
-            return "Lỗi khi lấy lịch sử task, vui lòng thử lại";
-        }
-    }
-
-    @Tool(description = """
-            Lấy lịch sử hoạt động của MỘT THÀNH VIÊN cụ thể trong dự án.
-            
-            Trả về tất cả các hoạt động mà một thành viên đã thực hiện trong dự án
-            (tạo task, cập nhật trạng thái, bình luận, thay đổi deadline, v.v.).
-            
-            SỬ DỤNG KHI:
-            - Cần xem một thành viên đã làm gì trong dự án
-            - Theo dõi đóng góp/hoạt động của một người cụ thể
-            - Ví dụ: "Anh Minh đã làm gì?", "hoạt động của user@example.com",
-                    "cho tôi xem công việc của thành viên X"
+            Tạo một nhiệm vụ (task) mới cho dự án chỉ dành cho những thành viên có
+            vài trò là owner và admin.
             """)
-    public String getHistoryForMember(
-            @ToolParam(description = "ID của dự án (định dạng UUID)")
-            String projectId,
-
-            @ToolParam(description = "Email của thành viên cần xem lịch sử hoạt động")
-            String memberEmail,
-
-            @ToolParam(description = "Số lượng bản ghi lịch sử muốn lấy (giá trị từ 1-20, mặc định là 5)") Integer limit) {
-            int realLimit = (limit > 0 && limit <= 20) ? limit : 5;
-        String sql = """
-                SELECT id, content, metadata
-                FROM vector_store
-                WHERE metadata ->> 'projectId' = ?
-                  AND metadata ->> 'actorEmail' = ?
-                  AND metadata ->> 'doc_type' = 'HISTORY'
-                ORDER BY metadata ->> 'createdAt' DESC
-                LIMIT ?
-            """;
+    public String createTask(
+            @ToolParam(description = "Tiêu đề nhiệm vụ") String title,
+            @ToolParam(description = "Mô tả chi tiết nhiệm vụ") String description,
+            @ToolParam(description = "Độ ưu tiên là 1 trong [LOW,HIGH,MEDIUM]") String priority,
+            @ToolParam(description = "Hạn chót của nhiệm vụ dạng ISO String") String dueAt,
+            @ToolParam(description = "ID của dự án chứa nhiệm vụ") String projectId,
+            @ToolParam(description = "Id cột chứa nhiệm vụ") String boardColumnId,
+            @ToolParam(description = "Danh sách id thành viên làm nhiệm vụ") List<String> assigneeIds,
+            @ToolParam(description = "Danh sách id nhãn của nhiệm vụ") List<String> labelIds,
+            @ToolParam(description = "Danh sách các công việc con cần làm của nhiệm vụ") List<String> checkLists
+    ) {
+        TaskRequest taskRequest = new TaskRequest(title, description, priority, dueAt,
+                projectId, boardColumnId, assigneeIds, labelIds, checkLists);
         try {
-            List<Document> documents = jdbcTemplate.query(sql, this::mapRow, projectId, memberEmail, realLimit);
-            return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(documents);
+            ResponseEntity<ApiResponse<?>> response =
+                    coreServiceClient.createTask(projectId, taskRequest);
+            if (response.getStatusCode().is2xxSuccessful()) {
+                return "Hệ thống đã tạo thành công nhiệm vụ: " + title;
+            } else {
+                return "Không thể tạo nhiệm vụ. Phản hồi từ hệ thống: " + response.getBody();
+            }
         } catch (Exception e) {
-            return "Lỗi khi lấy lịch sử task, vui lòng thử lại";
-        }
-    }
-
-    @Tool(description = """
-        Lấy thông tin TRẠNG THÁI HIỆN TẠI của nhiều nhiệm vụ (task).
-        
-        Trả về thông tin mới nhất của các task được chỉ định,
-        KHÔNG phải lịch sử thay đổi. Dùng để xem tình trạng hiện tại của nhiều task cùng lúc.
-        
-        SỬ DỤNG KHI:
-            - Cần xem thông tin hiện tại của nhiều task
-            - Ví dụ: "cho tôi xem task A, B, C", "trạng thái của các task này"
-        
-        KHÔNG DÙNG KHI:
-            - Cần xem LỊCH SỬ thay đổi → Dùng getHistoryForTask hoặc getRecentHistoryForProject
-        """)
-    public String getTaskInfo(
-            @ToolParam(description = "Danh sách ID của các nhiệm vụ/task cần xem (mỗi taskId có định dạng UUID)")
-            List<String> taskIds
-    ){
-        String pgArrayString = "{" + String.join(",", taskIds) + "}";
-        String sql = """
-                SELECT id, content, metadata
-                FROM vector_store
-                WHERE id = ANY(?::uuid[])
-            """;
-        try {
-            List<Document> documents = jdbcTemplate.query(sql, this::mapRow, pgArrayString);
-            return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(documents);
-        } catch (Exception e) {
-            return "Lỗi khi lấy thông tin task, vui lòng thử lại";
+            return "Lỗi khi tạo nhiệm vụ: " + e.getMessage();
         }
     }
 
 
-    public Document mapRow(ResultSet rs, int rowNum) throws SQLException {
+    @Tool(description = "Lấy thông tin chi tiết mới nhất của task")
+    public Map<String, Object> getTask(
+            @ToolParam(description = "Id của dự án") String projectId,
+            @ToolParam(description = "Id của nhiệm vụ") String taskId
+    ) {
+        return coreServiceClient.getTask(projectId, taskId);
+    }
+
+    @Tool(description = "Lấy lịch sử hoạt động mới nhất của 1 project")
+    public Object getHistoryForProject(
+            @ToolParam(description = "Id của dự án") String projectId,
+            @ToolParam(description = "Trang muốn lấy mặc định là 0") int page,
+            @ToolParam(description = "Số lượng muốn lấy mặc định là 10") int size
+    ) {
+        return activityServiceClient.getActivity(projectId, page, size);
+    }
+
+    @Tool(description = "Lấy lịch sử hoạt động mới nhất của thành viên trong project")
+    public Object getHistoryForProjectAndMember(
+            @ToolParam(description = "Id của dự án") String projectId,
+            @ToolParam(description = "Id của thành viên") String memberId,
+            @ToolParam(description = "Trang muốn lấy mặc định là 0") int page,
+            @ToolParam(description = "Số lượng muốn lấy mặc định là 10") int size
+    ) {
+        return activityServiceClient.getActivitiesByUserId(projectId, memberId, page, size);
+    }
+
+    @Tool(description = "Lấy lịch sử hoạt động mới nhất của 1 nhiệm vụ")
+    public Object getHistoryForTask(
+            @ToolParam(description = "Id của nhiệm vụ") String taskId,
+            @ToolParam(description = "Trang muốn lấy mặc định là 0") int page,
+            @ToolParam(description = "Số lượng muốn lấy mặc định là 10") int size
+    ) {
+        return activityServiceClient.getActivitiesByTask(taskId, page, size);
+    }
+
+    @Tool(description = "Lấy lịch sử hoạt động mới nhất của 1 thành viên trong 1 task")
+    public Object getHistoryForTaskAndMember(
+            @ToolParam(description = "Id của nhiệm vụ") String taskId,
+            @ToolParam(description = "Id của thành viên") String memberId,
+            @ToolParam(description = "Trang muốn lấy mặc định là 0") int page,
+            @ToolParam(description = "Số lượng muốn lấy mặc định là 10") int size
+    ) {
+        return activityServiceClient.getActivitiesByTaskAndUser(taskId, memberId, page, size);
+    }
+
+    @Tool(description = "Tìm kiếm thông tin trong các tài liệu/file đính kèm của một Task cụ thể.")
+    public String searchTaskAttachments(
+            @ToolParam(description = "ID của Task") String taskId,
+            @ToolParam(description = "Câu hỏi hoặc từ khóa cần tìm") String query
+    ) {
         try {
-            String id = rs.getString("id");
-            String content = rs.getString("content");
-            String metadataJson = rs.getString("metadata");
+            FilterExpressionBuilder b = new FilterExpressionBuilder();
+            Filter.Expression e = b.and(
+                    b.eq("taskId", taskId),
+                    b.eq("type", "ATTACHMENT")
+            ).build();
+            SearchRequest searchRequest = SearchRequest.builder()
+                    .query(query)
+                    .topK(5)
+                    .filterExpression(e)
+                    .build();
+            List<Document> docs = vectorStore.similaritySearch(searchRequest);
 
-            Map<String, Object> metadata = objectMapper.readValue(
-                    metadataJson,
-                    new TypeReference<>() {
-                    }
-            );
-
-            return new Document(id, content, metadata);
-
-        } catch (JsonProcessingException e) {
-            throw new SQLException("Error parsing metadata JSON", e);
+            if (docs.isEmpty()) return "Không tìm thấy thông tin trong tài liệu của task này.";
+            return docs.stream()
+                    .map(d -> String.format("- [Trích từ %s]: %s",
+                            d.getMetadata().get("fileKey"),
+                            d.getFormattedContent()))
+                    .collect(Collectors.joining("\n\n"));
+        } catch (Exception e) {
+            return "Lỗi khi truy cập tài liệu.";
         }
     }
 }

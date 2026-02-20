@@ -13,6 +13,7 @@ import java.util.List;
 public interface ActivityRepository extends MongoRepository<Activity, String> {
     Page<Activity> findByProjectIdOrderByCreatedAtDesc(String projectId, Pageable pageable);
     Page<Activity> findByTaskIdOrderByCreatedAtDesc(String taskId, Pageable pageable);
-
+    Page<Activity> findByProjectIdAndActorIdOrderByCreatedAtDesc(String projectId, String actorId, Pageable pageable);
+    Page<Activity> findByTaskIdAndActorIdOrderByCreatedAtDesc(String taskId, String actorId, Pageable pageable);
     List<Activity> findByActorIdOrderByCreatedAtDesc(String userId);
 }
