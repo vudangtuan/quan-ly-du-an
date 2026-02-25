@@ -27,7 +27,7 @@ import java.util.List;
 public class SecurityConfig {
 
     @Value("${app.cors.allowed-origins}")
-    private String allowedOrigins;
+    private String[] allowedOrigins;
 
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
